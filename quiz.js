@@ -18,10 +18,31 @@ const QUESTIONS = {
     return variants.map(variant => ({ category: "grammar", type, item, variant, id: `g-${item.id}-${type}-${variant}` }));
   }))
 };
+// Chế độ đề lấy từ ?mode= trên URL; mỗi chế độ lưu tiến trình riêng.
+const MODES = {
+  all: {
+    categories: ["kanji", "grammar"], title: "Luyện đề tổng hợp · Kanji & Ngữ pháp", heading: ["Luyện đề", "tổng hợp."],
+    intro: "Kanji và ngữ pháp bài 6–10 được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.",
+    storageKey: "jpd326-quiz-coverage-v1"
+  },
+  kanji: {
+    categories: ["kanji"], title: "Luyện Kanji · Bài 6–10", heading: ["Luyện", "Kanji."],
+    intro: `${WORDS.length} từ Kanji bài 6–10: cách đọc, nghĩa và ngược lại. Trả lời đủ mọi từ rồi lượt mới được xáo lại.`,
+    storageKey: "jpd326-quiz-coverage-v1-kanji"
+  },
+  grammar: {
+    categories: ["grammar"], title: "Luyện ngữ pháp · Bài 6–10", heading: ["Luyện", "ngữ pháp."],
+    intro: `${GRAMMAR.length} cấu trúc ngữ pháp bài 6–10: điền câu, cách nối và ý nghĩa. Trả lời đủ mọi cấu trúc rồi lượt mới được xáo lại.`,
+    storageKey: "jpd326-quiz-coverage-v1-grammar"
+  }
+};
+const MODE_NAME = Object.hasOwn(MODES, new URLSearchParams(location.search).get("mode"))
+  ? new URLSearchParams(location.search).get("mode") : "all";
+const MODE = MODES[MODE_NAME];
 const itemKey = spec => `${spec.category}:${spec.item.id}`;
 const QUESTION_BY_ID = new Map();
 const QUESTION_GROUPS = new Map();
-for (const spec of [...QUESTIONS.kanji, ...QUESTIONS.grammar]) {
+for (const spec of MODE.categories.flatMap(category => QUESTIONS[category])) {
   QUESTION_BY_ID.set(spec.id, spec);
   const key = itemKey(spec);
   if (!QUESTION_GROUPS.has(key)) QUESTION_GROUPS.set(key, []);
@@ -29,7 +50,7 @@ for (const spec of [...QUESTIONS.kanji, ...QUESTIONS.grammar]) {
 }
 const ITEM_KEYS = [...QUESTION_GROUPS.keys()];
 const ITEM_KEY_SET = new Set(ITEM_KEYS);
-const STORAGE_KEY = "jpd326-quiz-coverage-v1";
+const STORAGE_KEY = MODE.storageKey;
 const BANK_SIGNATURE = ITEM_KEYS.join("|");
 let roundNumber = 1;
 let completed = new Set();
@@ -119,6 +140,8 @@ function updateProgress() {
     else grammar++;
   }
   $("roundCount").textContent = roundNumber;
+  $("wordRow").hidden = !MODE.categories.includes("kanji");
+  $("grammarRow").hidden = !MODE.categories.includes("grammar");
   $("wordCount").textContent = `${words}/${WORDS.length} từ`;
   $("grammarCount").textContent = `${grammar}/${GRAMMAR.length} cấu trúc`;
 }
@@ -175,16 +198,26 @@ function renderQuestionText(text, marker, viQuestion, sentenceStyle) {
   const blank = document.createElement("span"); blank.className = "blank"; blank.textContent = marker;
   root.append(document.createTextNode(before), blank, document.createTextNode(after));
 }
+// Gợi ý không được chứa đáp án hoặc lặp lại câu hỏi; trả về null để ẩn nút đó.
+function hintValues({ spec, parts }) {
+  let values;
+  if (spec.category === "kanji") values = { hira: spec.item.hira, meaning: spec.item.meaning };
+  else {
+    const example = grammarExample(spec);
+    if (spec.type === "pattern-meaning") values = { hira: example.hira, meaning: null };
+    else if (spec.type === "meaning-pattern") values = { hira: GRAMMAR_EXAMPLES[spec.item.id].sentence.questionHira, meaning: null };
+    else values = { hira: example.questionHira, meaning: example.vi };
+  }
+  for (const kind of Object.keys(values)) {
+    if (values[kind] === parts.answer || values[kind] === parts.text) values[kind] = null;
+  }
+  return values;
+}
 function renderHints(entry) {
-  const { spec } = entry;
-  const example = spec.category === "grammar" ? grammarExample(spec) : null;
-  const values = {
-    hira: example ? example.hira : spec.item.hira,
-    meaning: example ? example.vi : spec.item.meaning
-  };
-  for (const [kind, value] of Object.entries(values)) {
+  for (const [kind, value] of Object.entries(hintValues(entry))) {
     const button = $(kind === "hira" ? "hiraButton" : "meaningButton");
     const hint = $(kind === "hira" ? "hiraHint" : "meaningHint");
+    button.parentElement.hidden = value === null;
     const shown = Boolean(entry[`${kind}Shown`]);
     button.textContent = `${shown ? "Ẩn" : "Hiện"} ${kind === "hira" ? "hira" : "dịch"}`;
     button.setAttribute("aria-expanded", String(shown));
@@ -266,8 +299,16 @@ function showResult(entry) {
     detail.textContent = `${spec.item.kanji} · ${spec.item.hira} — ${spec.item.meaning}`; feedback.append(detail);
   } else {
     const item = spec.item;
-    const lines = [`${item.pattern} — ${item.meaning}`, `Cách nối: ${item.join}`, `Ví dụ: ${grammarExample(spec).full}`];
-    for (const line of lines) { const detail = document.createElement("span"); detail.className = "detail"; detail.textContent = line; feedback.append(detail); }
+    const example = grammarExample(spec);
+    const lines = [
+      [`${item.pattern} — ${item.meaning}`], [`Cách nối: ${item.join}`], [`Ví dụ: ${example.full}`],
+      [example.hira, "jp"], [`Dịch: ${example.vi}`]
+    ];
+    for (const [line, extra] of lines) {
+      const detail = document.createElement("span"); detail.className = "detail" + (extra ? ` ${extra}` : "");
+      if (extra === "jp") detail.lang = "ja";
+      detail.textContent = line; feedback.append(detail);
+    }
   }
   const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "← xem câu trước · → hoặc Enter sang câu tiếp."; feedback.append(hint);
   feedback.hidden = false;
@@ -298,7 +339,9 @@ document.addEventListener("keydown", event => {
     toggleHint(event.target === $("hiraButton") ? "hira" : "meaning");
     return;
   }
-  if (event.key === "Enter" && [$("menuButton"), $("previousButton"), $("nextButton")].includes(event.target)) return;
+  // Để Enter trên nút đang được chọn (kể cả đáp án) hoạt động như một cú bấm bình thường.
+  if (event.key === "Enter" && ([$("menuButton"), $("previousButton"), $("nextButton")].includes(event.target) ||
+    event.target.classList?.contains("answer") || event.target.tagName === "A")) return;
   if (event.key === "ArrowLeft") { event.preventDefault(); previousQuestion(); return; }
   if (event.key === "ArrowRight" || event.key === "Enter") { event.preventDefault(); nextQuestion(); return; }
   if (/^[1-4]$/.test(event.key)) {
@@ -307,6 +350,17 @@ document.addEventListener("keydown", event => {
     if (current.chosen !== null) nextQuestion(); else button?.click();
   }
 }, true);
+function applyMode() {
+  document.title = MODE.title;
+  $("quiz").setAttribute("aria-label", MODE.title);
+  $("sidebarTitle").replaceChildren(MODE.heading[0], document.createElement("br"), MODE.heading[1]);
+  $("sidebarIntro").textContent = MODE.intro;
+  for (const link of document.querySelectorAll(".mode-switch a")) {
+    if (link.dataset.mode === MODE_NAME) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+}
+applyMode();
 restoreProgress();
 updateProgress();
 $("sidebar").inert = true;

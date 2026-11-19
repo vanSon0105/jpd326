@@ -14,23 +14,28 @@
   <button class="menu-button" id="menuButton" type="button" aria-label="Mở thanh bên" aria-controls="sidebar" aria-expanded="false">
     <span class="menu-lines" aria-hidden="true"></span>
   </button>
+  <nav class="mode-switch" aria-label="Chọn bộ đề">
+    <a href="index.html" data-mode="all">Tổng hợp</a>
+    <a href="index.html?mode=kanji" data-mode="kanji">Kanji</a>
+    <a href="index.html?mode=grammar" data-mode="grammar">Ngữ pháp</a>
+  </nav>
   <div class="backdrop" id="backdrop" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="Thông tin bộ đề" aria-hidden="true">
     <div class="sidebar-top">
       <span class="mark" aria-hidden="true">文</span>
       <button id="closeSidebar" type="button" aria-label="Đóng thanh bên">×</button>
     </div>
-    <h2>Luyện đề<br>tổng hợp.</h2>
-    <p>Kanji và ngữ pháp bài 6–10 được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.</p>
+    <h2 id="sidebarTitle">Luyện đề<br>tổng hợp.</h2>
+    <p id="sidebarIntro">Kanji và ngữ pháp bài 6–10 được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.</p>
     <div class="sidebar-facts">
       <div><span>Lượt hiện tại</span><strong id="roundCount">1</strong></div>
-      <div><span>Kanji đã trả lời</span><strong id="wordCount">0/283 từ</strong></div>
-      <div><span>Ngữ pháp đã trả lời</span><strong id="grammarCount">0/68 cấu trúc</strong></div>
+      <div id="wordRow"><span>Kanji đã trả lời</span><strong id="wordCount">0/283 từ</strong></div>
+      <div id="grammarRow"><span>Ngữ pháp đã trả lời</span><strong id="grammarCount">0/68 cấu trúc</strong></div>
     </div>
     <p class="sidebar-hint">Câu bỏ qua sẽ quay lại trong lượt này. Tiến trình được lưu trên trình duyệt. Phím 1–4 để chọn đáp án; ←, → hoặc Enter để chuyển câu.</p>
   </aside>
 
-  <main class="quiz" aria-label="Đề kiểm tra tổng hợp">
+  <main class="quiz" id="quiz" aria-label="Đề kiểm tra tổng hợp">
     <h1 class="question-prompt" id="questionPrompt"></h1>
     <p class="question-text" id="questionText"></p>
     <div class="study-hints" aria-label="Gợi ý học tập">
