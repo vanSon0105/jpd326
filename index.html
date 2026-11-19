@@ -26,13 +26,17 @@
       <div><span>Kanji</span><strong id="wordCount">283 từ</strong></div>
       <div><span>Ngữ pháp</span><strong id="grammarCount">68 cấu trúc</strong></div>
     </div>
-    <p class="sidebar-hint">Phím 1–4 để chọn đáp án. Sau khi xem kết quả, bấm đáp án bất kỳ hoặc Enter để sang câu tiếp theo.</p>
+    <p class="sidebar-hint">Phím 1–4 để chọn đáp án. Dùng ← / → hoặc Enter để xem lại và chuyển câu.</p>
   </aside>
 
   <main class="quiz" aria-label="Đề kiểm tra tổng hợp">
     <h1 class="question-prompt" id="questionPrompt"></h1>
     <p class="question-text" id="questionText"></p>
     <div class="answers" id="answers"></div>
+    <nav class="question-nav" aria-label="Chuyển câu hỏi">
+      <button id="previousButton" type="button">← Câu trước</button>
+      <button id="nextButton" type="button">Câu tiếp →</button>
+    </nav>
     <div class="feedback" id="feedback" role="status" aria-live="polite" hidden></div>
   </main>
 

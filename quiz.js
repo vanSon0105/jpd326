@@ -20,7 +20,8 @@ const QUESTIONS = {
 };
 let decks = { kanji: [], grammar: [] };
 let current = null;
-let answered = false;
+const history = [];
+let historyIndex = -1;
 let lastCategory = null;
 let categoryStreak = 0;
 
@@ -112,12 +113,10 @@ function renderQuestionText(text, marker, viQuestion) {
   const blank = document.createElement("span"); blank.className = "blank"; blank.textContent = marker;
   root.append(document.createTextNode(before), blank, document.createTextNode(after));
 }
-function nextQuestion() {
-  answered = false;
+function renderQuestion(entry) {
+  current = entry;
+  const { spec, parts } = entry;
   $("feedback").hidden = true;
-  const spec = drawSpec();
-  const parts = questionParts(spec);
-  current = { spec, parts };
   $("questionPrompt").textContent = PROMPTS[spec.type];
   renderQuestionText(parts.text, parts.marker, parts.viQuestion);
   const root = $("answers"); root.replaceChildren(); root.classList.remove("answered");
@@ -127,14 +126,33 @@ function nextQuestion() {
     button.dataset.value = option;
     const number = document.createElement("span"); number.className = "number"; number.textContent = `${index + 1}.`;
     button.append(number, document.createTextNode(display(option)));
-    button.onclick = () => { if (answered) nextQuestion(); else grade(option); };
+    button.onclick = () => { if (current.chosen !== null) nextQuestion(); else grade(option); };
     root.append(button);
   }
+  $("previousButton").disabled = historyIndex === 0;
+  if (entry.chosen !== null) showResult(entry);
+}
+function nextQuestion() {
+  if (historyIndex < history.length - 1) historyIndex++;
+  else {
+    const spec = drawSpec();
+    history.push({ spec, parts: questionParts(spec), chosen: null });
+    historyIndex++;
+  }
+  renderQuestion(history[historyIndex]);
+}
+function previousQuestion() {
+  if (historyIndex <= 0) return;
+  historyIndex--;
+  renderQuestion(history[historyIndex]);
 }
 function grade(chosen) {
-  if (!current || answered) return;
-  answered = true;
-  const { spec, parts } = current;
+  if (!current || current.chosen !== null) return;
+  current.chosen = chosen;
+  showResult(current);
+}
+function showResult(entry) {
+  const { spec, parts, chosen } = entry;
   const correct = chosen === parts.answer;
   const root = $("answers"); root.classList.add("answered");
   for (const button of root.querySelectorAll(".answer")) {
@@ -152,7 +170,7 @@ function grade(chosen) {
     const lines = [`${item.pattern} — ${item.meaning}`, `Cách nối: ${item.join}`, `Ví dụ: ${item.sentence.replace("＿＿", item.answer)}`];
     for (const line of lines) { const detail = document.createElement("span"); detail.className = "detail"; detail.textContent = line; feedback.append(detail); }
   }
-  const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "Bấm đáp án bất kỳ hoặc Enter để sang câu tiếp."; feedback.append(hint);
+  const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "Dùng nút hoặc phím ← / → để xem lại và chuyển câu."; feedback.append(hint);
   feedback.hidden = false;
 }
 function setSidebar(open) {
@@ -168,16 +186,21 @@ function setSidebar(open) {
 $("menuButton").onclick = () => setSidebar(!$("sidebar").classList.contains("open"));
 $("closeSidebar").onclick = () => setSidebar(false);
 $("backdrop").onclick = () => setSidebar(false);
+$("previousButton").onclick = previousQuestion;
+$("nextButton").onclick = nextQuestion;
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") { setSidebar(false); return; }
   if ($("sidebar").classList.contains("open")) return;
-  if (answered && event.key === "Enter") { event.preventDefault(); nextQuestion(); return; }
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key === "Enter" && [$("menuButton"), $("previousButton"), $("nextButton")].includes(event.target)) return;
+  if (event.key === "ArrowLeft") { event.preventDefault(); previousQuestion(); return; }
+  if (event.key === "ArrowRight" || event.key === "Enter") { event.preventDefault(); nextQuestion(); return; }
   if (/^[1-4]$/.test(event.key)) {
     event.preventDefault();
     const button = $("answers").children[Number(event.key) - 1];
-    if (answered) nextQuestion(); else button?.click();
+    if (current.chosen !== null) nextQuestion(); else button?.click();
   }
-});
+}, true);
 $("wordCount").textContent = `${WORDS.length} từ`;
 $("grammarCount").textContent = `${GRAMMAR.length} cấu trúc`;
 $("sidebar").inert = true;
