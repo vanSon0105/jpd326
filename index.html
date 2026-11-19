@@ -65,8 +65,15 @@
     </div>
     <h1 class="question-prompt" id="questionPrompt"></h1>
     <section class="passage" id="passage" aria-label="Bài đọc" hidden>
-      <h2 id="passageTitle" lang="ja"></h2>
+      <div class="passage-head">
+        <h2 id="passageTitle" lang="ja"></h2>
+        <span class="passage-tools">
+          <button id="passageHiraButton" type="button" aria-controls="passageText" aria-pressed="false">Hira</button>
+          <button id="passageViButton" type="button" aria-controls="passageVi" aria-expanded="false">Dịch</button>
+        </span>
+      </div>
       <p id="passageText" lang="ja"></p>
+      <p id="passageVi" class="passage-vi" hidden></p>
     </section>
     <p class="question-text" id="questionText"></p>
     <div class="study-hints" aria-label="Gợi ý học tập">

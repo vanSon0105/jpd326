@@ -386,7 +386,7 @@ function hintValues({ spec, parts }) {
   let values;
   if (spec.category === "kanji") values = { hira: spec.item.hira, meaning: spec.item.meaning };
   else if (spec.category === "vocab") values = { hira: spec.item.reading === spec.item.word ? null : spec.item.reading, meaning: spec.item.meaning };
-  else if (spec.category === "exam") values = { hira: null, meaning: null };
+  else if (spec.category === "exam") values = { hira: spec.item.hira || null, meaning: spec.item.vi || null };
   else {
     const example = grammarExample(spec);
     if (spec.type === "pattern-meaning") values = { hira: example.hira, meaning: null };
@@ -410,6 +410,28 @@ function renderHints(entry) {
     hint.hidden = !shown;
   }
 }
+// Bài đọc hiểu: nút "Hira" đổi nội dung bài sang cách đọc, nút "Dịch" hiện bản dịch bên dưới.
+function renderPassage(entry) {
+  const exam = entry.spec.category === "exam" ? entry.spec.item : null;
+  const passage = exam?.passage ? EXAM_PASSAGES[exam.passage] : null;
+  $("passage").hidden = !passage;
+  if (!passage) return;
+  $("passageTitle").textContent = passage.title;
+  $("passageText").textContent = entry.passageHira && passage.hira ? passage.hira : passage.text;
+  $("passageVi").textContent = passage.vi || "";
+  $("passageVi").hidden = !(entry.passageVi && passage.vi);
+  $("passageHiraButton").hidden = !passage.hira;
+  $("passageViButton").hidden = !passage.vi;
+  $("passageHiraButton").setAttribute("aria-pressed", String(Boolean(entry.passageHira)));
+  $("passageViButton").setAttribute("aria-expanded", String(Boolean(entry.passageVi)));
+  $("passageHiraButton").textContent = entry.passageHira ? "Chữ Hán" : "Hira";
+  $("passageViButton").textContent = entry.passageVi ? "Ẩn dịch" : "Dịch";
+}
+function togglePassage(kind) {
+  if (!current) return;
+  current[kind] = !current[kind];
+  renderPassage(current);
+}
 function toggleHint(kind) {
   if (!current) return;
   const key = `${kind}Shown`;
@@ -423,9 +445,7 @@ function renderQuestion(entry) {
   const exam = spec.category === "exam" ? spec.item : null;
   $("questionPrompt").textContent = exam
     ? `Đề ${exam.sources[0].split(" câu")[0]} · ${EXAM_PROMPTS[exam.kind]}` : PROMPTS[spec.type];
-  const passage = exam?.passage ? EXAM_PASSAGES[exam.passage] : null;
-  $("passage").hidden = !passage;
-  if (passage) { $("passageTitle").textContent = passage.title; $("passageText").textContent = passage.text; }
+  renderPassage(entry);
   renderQuestionText(parts.text, parts.marker, parts.viQuestion, ["grammar", "exam"].includes(spec.category));
   $("questionText").classList.toggle("exam", Boolean(exam));
   renderHints(entry);
@@ -486,7 +506,11 @@ function showResult(entry) {
   let lines;
   if (spec.category === "kanji") lines = [[`${item.kanji} · ${item.hira} — ${item.meaning}`, "jp"]];
   else if (spec.category === "vocab") lines = [[`${item.word} · ${item.reading} — ${item.meaning}`, "jp"], [`Từ vựng bài ${item.lesson}`]];
-  else if (spec.category === "exam") lines = [[`Giải thích: ${item.explain}`], [`Nguồn: ${item.sources.join(", ")}`]];
+  else if (spec.category === "exam") {
+    lines = [[`Giải thích: ${item.explain}`]];
+    if (item.vi) lines.push([`Dịch đề: ${item.vi}`]);
+    lines.push([`Nguồn: ${item.sources.join(", ")}`]);
+  }
   else {
     const example = grammarExample(spec);
     lines = [
@@ -522,6 +546,8 @@ $("previousButton").onclick = previousQuestion;
 $("nextButton").onclick = nextQuestion;
 $("hiraButton").onclick = () => toggleHint("hira");
 $("meaningButton").onclick = () => toggleHint("meaning");
+$("passageHiraButton").onclick = () => togglePassage("passageHira");
+$("passageViButton").onclick = () => togglePassage("passageVi");
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") { setSidebar(false); return; }
   if ($("sidebar").classList.contains("open")) return;
@@ -532,8 +558,7 @@ document.addEventListener("keydown", event => {
     return;
   }
   // Để Enter trên nút đang được chọn (kể cả đáp án) hoạt động như một cú bấm bình thường.
-  if (event.key === "Enter" && ([$("menuButton"), $("previousButton"), $("nextButton")].includes(event.target) ||
-    event.target.classList?.contains("answer") || event.target.tagName === "A")) return;
+  if (event.key === "Enter" && ["BUTTON", "A", "SELECT", "INPUT"].includes(event.target.tagName)) return;
   if (event.key === "ArrowLeft") { event.preventDefault(); previousQuestion(); return; }
   if (event.key === "ArrowRight" || event.key === "Enter") { event.preventDefault(); nextQuestion(); return; }
   if (/^[1-4]$/.test(event.key)) {
