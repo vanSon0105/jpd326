@@ -24,12 +24,27 @@ const QUESTIONS = {
     return variants.map(variant => ({ category: "grammar", type, item, variant, id: `g-${item.id}-${type}-${variant}` }));
   }))
 };
-let decks = { kanji: [], grammar: [] };
+const itemKey = spec => `${spec.category}:${spec.item.id}`;
+const QUESTION_BY_ID = new Map();
+const QUESTION_GROUPS = new Map();
+for (const spec of [...QUESTIONS.kanji, ...QUESTIONS.grammar]) {
+  QUESTION_BY_ID.set(spec.id, spec);
+  const key = itemKey(spec);
+  if (!QUESTION_GROUPS.has(key)) QUESTION_GROUPS.set(key, []);
+  QUESTION_GROUPS.get(key).push(spec.id);
+}
+const ITEM_KEYS = [...QUESTION_GROUPS.keys()];
+const ITEM_KEY_SET = new Set(ITEM_KEYS);
+const STORAGE_KEY = "jpd326-quiz-coverage-v1";
+const BANK_SIGNATURE = ITEM_KEYS.join("|");
+let roundNumber = 1;
+let completed = new Set();
+let itemDeck = [];
+let variantDecks = {};
+let pendingKey = null;
 let current = null;
 const history = [];
 let historyIndex = -1;
-let lastCategory = null;
-let categoryStreak = 0;
 
 function shuffle(items) {
   const result = [...items];
@@ -100,17 +115,59 @@ function questionParts(spec) {
   if (type === "pattern-meaning") return { text: item.pattern, answer: item.meaning, options: grammarOptions(item, type, variant), viOptions: true };
   return { text: item.meaning, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
+function updateProgress() {
+  let words = 0;
+  let grammar = 0;
+  for (const key of completed) {
+    if (key.startsWith("kanji:")) words++;
+    else grammar++;
+  }
+  $("roundCount").textContent = roundNumber;
+  $("wordCount").textContent = `${words}/${WORDS.length} từ`;
+  $("grammarCount").textContent = `${grammar}/${GRAMMAR.length} cấu trúc`;
+}
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      signature: BANK_SIGNATURE, roundNumber, completed: [...completed], itemDeck, variantDecks, pendingKey
+    }));
+  } catch { /* Trang vẫn dùng được khi trình duyệt chặn lưu trữ. */ }
+}
+function restoreProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!saved || saved.signature !== BANK_SIGNATURE || !Number.isSafeInteger(saved.roundNumber) || saved.roundNumber < 1) return;
+    roundNumber = saved.roundNumber;
+    completed = new Set((saved.completed || []).filter(key => ITEM_KEY_SET.has(key)));
+    itemDeck = [...new Set((saved.itemDeck || []).filter(key => ITEM_KEY_SET.has(key) && !completed.has(key)))];
+    if (ITEM_KEY_SET.has(saved.pendingKey) && !completed.has(saved.pendingKey)) {
+      itemDeck = [saved.pendingKey, ...itemDeck.filter(key => key !== saved.pendingKey)];
+    }
+    itemDeck.push(...shuffle(ITEM_KEYS.filter(key => !completed.has(key) && !itemDeck.includes(key))));
+    variantDecks = {};
+    for (const [key, ids] of Object.entries(saved.variantDecks || {})) {
+      if (ITEM_KEY_SET.has(key) && Array.isArray(ids)) {
+        variantDecks[key] = [...new Set(ids.filter(id => QUESTION_GROUPS.get(key).includes(id)))];
+      }
+    }
+  } catch { /* Bỏ qua dữ liệu lưu không hợp lệ. */ }
+}
 function drawSpec() {
-  let category = Math.random() < .5 ? "kanji" : "grammar";
-  if (categoryStreak >= 3) category = lastCategory === "kanji" ? "grammar" : "kanji";
-  if (!decks[category].length) decks[category] = shuffle(QUESTIONS[category]);
-  const deck = decks[category];
-  const previousSource = current?.spec.category === category ? current.spec.item.id : null;
-  const alternate = deck.findIndex(spec => spec.item.id !== previousSource);
-  if (alternate > 0) [deck[0], deck[alternate]] = [deck[alternate], deck[0]];
-  const spec = deck.shift();
-  categoryStreak = category === lastCategory ? categoryStreak + 1 : 1;
-  lastCategory = category;
+  if (completed.size === ITEM_KEYS.length) {
+    roundNumber++;
+    completed.clear();
+    itemDeck = shuffle(ITEM_KEYS);
+    if (current && itemDeck[0] === itemKey(current.spec)) [itemDeck[0], itemDeck[1]] = [itemDeck[1], itemDeck[0]];
+  }
+  if (!itemDeck.length) itemDeck = shuffle(ITEM_KEYS.filter(key => !completed.has(key)));
+  while (completed.has(itemDeck[0])) itemDeck.shift();
+  if (!itemDeck.length) itemDeck = shuffle(ITEM_KEYS.filter(key => !completed.has(key)));
+  const key = itemDeck.shift();
+  if (!variantDecks[key]?.length) variantDecks[key] = shuffle(QUESTION_GROUPS.get(key));
+  const spec = QUESTION_BY_ID.get(variantDecks[key].shift());
+  pendingKey = key;
+  updateProgress();
+  saveProgress();
   return spec;
 }
 function renderQuestionText(text, marker, viQuestion) {
@@ -167,8 +224,13 @@ function renderQuestion(entry) {
 function nextQuestion() {
   if (historyIndex < history.length - 1) historyIndex++;
   else {
+    if (current && current.chosen === null && current.round === roundNumber) {
+      const key = itemKey(current.spec);
+      if (!completed.has(key) && !itemDeck.includes(key)) itemDeck.push(key);
+      if (pendingKey === key) pendingKey = null;
+    }
     const spec = drawSpec();
-    history.push({ spec, parts: questionParts(spec), chosen: null, hiraShown: false, meaningShown: false });
+    history.push({ spec, parts: questionParts(spec), round: roundNumber, chosen: null, hiraShown: false, meaningShown: false });
     historyIndex++;
   }
   renderQuestion(history[historyIndex]);
@@ -181,6 +243,14 @@ function previousQuestion() {
 function grade(chosen) {
   if (!current || current.chosen !== null) return;
   current.chosen = chosen;
+  if (current.round === roundNumber) {
+    const key = itemKey(current.spec);
+    completed.add(key);
+    itemDeck = itemDeck.filter(item => item !== key);
+    if (pendingKey === key) pendingKey = null;
+    updateProgress();
+    saveProgress();
+  }
   showResult(current);
 }
 function showResult(entry) {
@@ -240,7 +310,7 @@ document.addEventListener("keydown", event => {
     if (current.chosen !== null) nextQuestion(); else button?.click();
   }
 }, true);
-$("wordCount").textContent = `${WORDS.length} từ`;
-$("grammarCount").textContent = `${GRAMMAR.length} cấu trúc`;
+restoreProgress();
+updateProgress();
 $("sidebar").inert = true;
 nextQuestion();
