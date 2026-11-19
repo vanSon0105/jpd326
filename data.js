@@ -302,19 +302,20 @@ const WORDS = Object.entries(RAW).flatMap(([lesson, text]) =>
   })
 );
 
-// Âm Hán Việt của từng chữ Hán: 72 chữ lấy từ slide Kanji 6–10, phần còn lại bổ sung thêm.
+// Âm Hán Việt của từng chữ Hán (72 chữ lấy từ slide Kanji 6–10, phần còn lại bổ sung), đã đối chiếu với Mazii:
+// trùng âm Mazii trừ 予 DỰ (豫), 縦 TUNG (dọc), giữ theo nghĩa của từ trong bài.
 const HAN_VIET = Object.fromEntries(`
-談ĐÀM 配PHỐI 努NỖ 助TRỢ 団ĐOÀN 苦KHỔ 退THOÁI 夢MỘNG 若NHƯỢC 期KỲ 反PHẢN 対ĐỐI 賛TÁN 許HỨA 収THU 礼LỄ
+談ĐÀM 配PHỐI 努NỖ 助TRỢ 団ĐOÀN 苦KHỔ 退THOÁI 夢MỘNG 若NHƯỢC 期KÌ 反PHẢN 対ĐỐI 賛TÁN 許HỨA 収THU 礼LỄ
 細TẾ 汚Ô 倒ĐẢO 破PHÁ 壊HOẠI 横HOÀNH 縦TUNG 印ẤN 刷LOÁT 類LOẠI 暮MỘ 個CÁ 疑NGHI 平BÌNH 等ĐẲNG 誤NGỘ
 笑TIẾU 訳DỊCH 捨XẢ 詩THI 想TƯỞNG 最TỐI 浴DỤC 衣Y 曲KHÚC 失THẤT 然NHIÊN 姿TƯ 神THẦN 積TÍCH 材TÀI 満MÃN
 戦CHIẾN 争TRANH 再TÁI 列LIỆT 座TỌA 鉄THIẾT 刻KHẮC 岸NGẠN 製CHẾ 造TẠO 形HÌNH 置TRÍ 連LIÊN 固CỐ 展TRIỂN 望VỌNG
 論LUẬN 現HIỆN 象TƯỢNG 在TẠI 港CẢNG 訪PHỎNG 景CẢNH 辺BIÊN
 地ĐỊA 成THÀNH 外NGOẠI 人NHÂN 位VỊ 設THIẾT 物VẬT 合HỢP 結KẾT 休HƯU 関QUAN 国QUỐC 定ĐỊNH 確XÁC 強CƯỜNG 有HỮU
-開KHAI 示THỊ 発PHÁT 台ĐÀI 願NGUYỆN 待ĐÃI 文VĂN 議NGHỊ 証CHỨNG 理LÝ 立LẬP 世THẾ 代ĐẠI 場TRƯỜNG 表BIỂU 気KHÍ
-職CHỨC 海HẢI 出XUẤT 入NHẬP 空KHÔNG 帰QUY 問VẤN 日NHẬT 米MỄ 探THAM 来LAI 品PHẨM 色SẮC 風PHONG 遠VIỄN 光QUANG
+開KHAI 示THỊ 発PHÁT 台ĐÀI 願NGUYỆN 待ĐÃI 文VĂN 議NGHỊ 証CHỨNG 理LÍ 立LẬP 世THẾ 代ĐẠI 場TRƯỜNG 表BIỂU 気KHÍ
+職CHỨC 海HẢI 出XUẤT 入NHẬP 空KHÔNG 帰QUY 問VẤN 日NHẬT 米MỄ 探THÁM 来LAI 品PHẨM 色SẮC 風PHONG 遠VIỄN 光QUANG
 駅DỊCH 周CHU 山SƠN 会HỘI 面DIỆN 体THỂ 験NGHIỆM 達ĐẠT 心TÂM 手THỦ 宅TRẠCH 給CẤP 年NIÊN 力LỰC 言NGÔN 介GIỚI
 犬KHUYỂN 役DỊCH 子TỬ 集TẬP 社XÃ 旅LỮ 情TÌNH 痛THỐNG 院VIỆN 去KHỨ 進TIẾN 早TẢO 後HẬU 中TRUNG 悪ÁC 者GIẢ
-間GIAN 限HẠN 学HỌC 初SƠ 時THỜI 動ĐỘNG 美MỸ 意Ý 協HIỆP 可KHẢ 特ĐẶC 買MÃI 回HỒI 税THUẾ 金KIM 朝TRIỀU
+間GIAN 限HẠN 学HỌC 初SƠ 時THỜI 動ĐỘNG 美MĨ 意Ý 協HIỆP 可KHẢ 特ĐẶC 買MÃI 回HỒI 税THUẾ 金KIM 朝TRIỀU
 返PHẢN 式THỨC 服PHỤC 法PHÁP 無VÔ 工CÔNG 明MINH 部BỘ 長TRƯỜNG 水THỦY 名DANH 産SẢN 線TUYẾN 半BÁN 全TOÀN 顔NHAN
 着TRƯỚC 書THƯ 画HỌA 新TÂN 似TỰ 同ĐỒNG 親THÂN 秋THU 一NHẤT 別BIỆT 性TÍNH 室THẤT 信TÍN 価GIÁ 分PHÂN 解GIẢI
 読ĐỘC 正CHÍNH 話THOẠI 声THANH 通THÔNG 直TRỰC 歌CA 見KIẾN 予DỰ 思TƯ 高CAO 低ĐÊ 多ĐA 少THIỂU 近CẬN 料LIỆU
@@ -322,8 +323,11 @@ const HAN_VIET = Object.fromEntries(`
 算TOÁN 質CHẤT 教GIÁO 足TÚC 未VỊ 員VIÊN 点ĐIỂM 不BẤT 術THUẬT 内NỘI 度ĐỘ 生SINH 建KIẾN 利LỢI 用DỤNG 車XA
 行HÀNH 席TỊCH 口KHẨU 私TƯ 遅TRÌ 両LƯỠNG 林LÂM
 `.trim().split(/\s+/).map(pair => [pair[0], pair.slice(1)]));
+// Từ có chữ đa âm đọc khác âm mặc định của chữ (vd 行 trong 行列 là "hàng").
+const HAN_VIET_WORDS = { 行列: "HÀNG LIỆT" };
 // Âm Hán Việt của cả từ (bỏ qua kana), vd 位置 → "VỊ TRÍ"; trả về "" nếu thiếu chữ nào.
 function hanViet(word) {
+  if (HAN_VIET_WORDS[word]) return HAN_VIET_WORDS[word];
   const chars = [...word].filter(char => /[㐀-鿿々]/.test(char));
   if (!chars.length || chars.some(char => char !== "々" && !HAN_VIET[char])) return "";
   return chars.map((char, i) => char === "々" ? HAN_VIET[chars[i - 1]] : HAN_VIET[char]).join(" ");
