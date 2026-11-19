@@ -401,7 +401,9 @@ function renderQuestionText(text, marker, viQuestion, sentenceStyle, mark) {
 // Gợi ý không được chứa đáp án hoặc lặp lại câu hỏi; trả về null để ẩn nút đó.
 function hintValues({ spec, parts }) {
   let values;
-  if (spec.category === "kanji") values = { hira: spec.item.hira, meaning: spec.item.meaning };
+  // Âm Hán chỉ gợi ý khi câu hỏi hiện chữ Hán; khi phải chọn chữ Hán thì âm Hán sẽ lộ đáp án.
+  if (spec.category === "kanji") values = { hira: spec.item.hira, meaning: spec.item.meaning,
+    hanviet: ["kanji-hira", "kanji-meaning"].includes(spec.type) ? hanViet(spec.item.kanji) || null : null };
   else if (spec.category === "vocab") values = { hira: spec.item.reading === spec.item.word ? null : spec.item.reading, meaning: spec.item.meaning };
   else if (spec.category === "exam") values = { hira: spec.item.hira || null, meaning: spec.item.vi || null };
   else {
@@ -409,6 +411,7 @@ function hintValues({ spec, parts }) {
     if (spec.type === "pattern-meaning") values = { hira: example.hira, meaning: null };
     else values = { hira: example.questionHira, meaning: example.vi };
   }
+  values.hanviet ??= null;
   for (const kind of Object.keys(values)) {
     if (values[kind] === parts.answer || values[kind] === parts.text) values[kind] = null;
   }
@@ -416,11 +419,11 @@ function hintValues({ spec, parts }) {
 }
 function renderHints(entry) {
   for (const [kind, value] of Object.entries(hintValues(entry))) {
-    const button = $(kind === "hira" ? "hiraButton" : "meaningButton");
-    const hint = $(kind === "hira" ? "hiraHint" : "meaningHint");
+    const button = $(`${kind}Button`);
+    const hint = $(`${kind}Hint`);
     button.parentElement.hidden = value === null;
     const shown = Boolean(entry[`${kind}Shown`]);
-    button.textContent = `${shown ? "Ẩn" : "Hiện"} ${kind === "hira" ? "hira" : "dịch"}`;
+    button.textContent = `${shown ? "Ẩn" : "Hiện"} ${{ hira: "hira", meaning: "dịch", hanviet: "âm Hán" }[kind]}`;
     button.setAttribute("aria-expanded", String(shown));
     hint.textContent = value;
     // Câu "ngữ pháp này nghĩa gì": gạch chân cả phần ngữ pháp trong dòng hira.
@@ -548,7 +551,8 @@ function showResult(entry) {
   let lines;
   if (["kanji", "vocab"].includes(spec.category)) {
     // Liệt kê cả 4 đáp án theo thứ tự nút: chữ · cách đọc — nghĩa, đánh dấu đáp án đúng và đáp án đã chọn.
-    const describe = word => spec.category === "kanji" ? `${word.kanji} · ${word.hira} — ${word.meaning}`
+    const describe = word => spec.category === "kanji"
+      ? `${word.kanji}${hanViet(word.kanji) ? ` (${hanViet(word.kanji)})` : ""} · ${word.hira} — ${word.meaning}`
       : `${word.word}${word.reading !== word.word ? ` · ${word.reading}` : ""} — ${word.meaning}${word.lesson !== item.lesson ? ` (bài ${word.lesson})` : ""}`;
     lines = parts.options.map((value, index) => {
       const word = parts.optionItems?.[index];
@@ -598,17 +602,13 @@ $("previousButton").onclick = previousQuestion;
 $("nextButton").onclick = nextQuestion;
 $("hiraButton").onclick = () => toggleHint("hira");
 $("meaningButton").onclick = () => toggleHint("meaning");
+$("hanvietButton").onclick = () => toggleHint("hanviet");
 $("passageHiraButton").onclick = () => togglePassage("passageHira");
 $("passageViButton").onclick = () => togglePassage("passageVi");
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") { setSidebar(false); return; }
   if ($("sidebar").classList.contains("open")) return;
   if (event.altKey || event.ctrlKey || event.metaKey) return;
-  if (event.key === "Enter" && [$("hiraButton"), $("meaningButton")].includes(event.target)) {
-    event.preventDefault();
-    toggleHint(event.target === $("hiraButton") ? "hira" : "meaning");
-    return;
-  }
   // Để Enter trên nút đang được chọn (kể cả đáp án) hoạt động như một cú bấm bình thường.
   if (event.key === "Enter" && ["BUTTON", "A", "SELECT", "INPUT"].includes(event.target.tagName)) return;
   if (event.key === "ArrowLeft") { event.preventDefault(); previousQuestion(); return; }
