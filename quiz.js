@@ -170,7 +170,7 @@ function showResult(entry) {
     const lines = [`${item.pattern} — ${item.meaning}`, `Cách nối: ${item.join}`, `Ví dụ: ${item.sentence.replace("＿＿", item.answer)}`];
     for (const line of lines) { const detail = document.createElement("span"); detail.className = "detail"; detail.textContent = line; feedback.append(detail); }
   }
-  const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "Dùng nút hoặc phím ← / → để xem lại và chuyển câu."; feedback.append(hint);
+  const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "← xem câu trước · → hoặc Enter sang câu tiếp."; feedback.append(hint);
   feedback.hidden = false;
 }
 function setSidebar(open) {
