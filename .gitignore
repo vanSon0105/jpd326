@@ -1,1 +1,7 @@
-/.taste-skill/*
+# Thư mục làm việc của công cụ thiết kế
+/.taste-skill/
+
+# Tài liệu giáo trình gốc (nặng, có bản quyền)
+/bunpo/
+*.pptx
+*.pdf
