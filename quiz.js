@@ -1,7 +1,21 @@
 const $ = id => document.getElementById(id);
 const KANJI_TYPES = ["kanji-hira", "hira-kanji", "kanji-meaning", "meaning-kanji"];
 const GRAMMAR_TYPES = ["sentence", "connection", "pattern-meaning", "meaning-pattern"];
+const VOCAB_TYPES = ["vocab-meaning", "meaning-vocab", "vocab-reading"];
+const EXAM_PROMPTS = {
+  fill: "Chọn đáp án đúng điền vào chỗ trống.",
+  read: "Chọn cách đọc đúng của từ được đánh dấu.",
+  write: "Chọn chữ Hán đúng của từ được đánh dấu.",
+  star: "Chọn từ đặt vào vị trí ★.",
+  mean: "Chọn từ gần nghĩa nhất.",
+  usage: "Chọn câu dùng từ này đúng nhất.",
+  feel: "Chọn từ tả đúng cảm xúc trong tình huống này.",
+  reading: "Đọc đoạn văn rồi trả lời câu hỏi."
+};
 const PROMPTS = {
+  "vocab-meaning": "Từ này có nghĩa gì?",
+  "meaning-vocab": "Nghĩa này ứng với từ nào?",
+  "vocab-reading": "Từ này đọc thế nào?",
   "kanji-hira": "Kanji này đọc bằng hiragana thế nào?",
   "hira-kanji": "Hiragana này tương ứng với từ Kanji nào?",
   "kanji-meaning": "Từ Kanji này có nghĩa gì?",
@@ -16,14 +30,34 @@ const QUESTIONS = {
   grammar: GRAMMAR.flatMap(item => GRAMMAR_TYPES.flatMap(type => {
     const variants = type === "connection" && EXTRA_CONNECTIONS[item.id] ? [0, 1] : [0];
     return variants.map(variant => ({ category: "grammar", type, item, variant, id: `g-${item.id}-${type}-${variant}` }));
-  }))
+  })),
+  // Chỉ hỏi cách đọc khi từ có chữ Hán (cách đọc khác mặt chữ).
+  vocab: VOCAB.flatMap(item => VOCAB_TYPES.filter(type => type !== "vocab-reading" || item.reading !== item.word)
+    .map(type => ({ category: "vocab", type, item, id: `v-${item.id}-${type}` }))),
+  exam: EXAM.map(item => ({ category: "exam", type: "exam", item, id: `e-${item.id}` }))
+};
+const CATEGORY_INFO = {
+  kanji: { label: "Kanji đã trả lời", total: WORDS.length, unit: "từ" },
+  grammar: { label: "Ngữ pháp đã trả lời", total: GRAMMAR.length, unit: "cấu trúc" },
+  vocab: { label: "Từ vựng đã trả lời", total: VOCAB.length, unit: "từ" },
+  exam: { label: "Câu đề thi đã làm", total: EXAM.length, unit: "câu" }
 };
 // Chế độ đề lấy từ ?mode= trên URL; mỗi chế độ lưu tiến trình riêng.
 const MODES = {
   all: {
-    categories: ["kanji", "grammar"], title: "Luyện đề tổng hợp · Kanji & Ngữ pháp", heading: ["Luyện đề", "tổng hợp."],
-    intro: "Kanji và ngữ pháp bài 6–10 được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.",
+    categories: ["kanji", "grammar", "vocab", "exam"], title: "Luyện đề tổng hợp · Bài 6–10", heading: ["Luyện đề", "tổng hợp."],
+    intro: "Kanji, ngữ pháp, từ vựng bài 6–10 và câu hỏi đề thi các kỳ trước được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.",
     storageKey: "jpd326-quiz-coverage-v1"
+  },
+  vocab: {
+    categories: ["vocab"], title: "Luyện từ vựng · Bài 6–10", heading: ["Luyện", "từ vựng."],
+    intro: `${VOCAB.length} từ vựng bài 6–10 (できる日本語 中級): nghĩa, cách đọc và ngược lại. Trả lời đủ mọi từ rồi lượt mới được xáo lại.`,
+    storageKey: "jpd326-quiz-coverage-v1-vocab"
+  },
+  exam: {
+    categories: ["exam"], title: "Luyện đề thi các kỳ trước", heading: ["Đề thi", "các kỳ trước."],
+    intro: `${EXAM.length} câu từ đề giữa kỳ và cuối kỳ JPD326 (SP2024, SU2024, SU2025), kể cả bài đọc hiểu. Đáp án và giải thích do người soạn tự làm, có thể có sai sót.`,
+    storageKey: "jpd326-quiz-coverage-v1-exam"
   },
   kanji: {
     categories: ["kanji"], title: "Luyện Kanji · Bài 6–10", heading: ["Luyện", "Kanji."],
@@ -51,7 +85,6 @@ for (const spec of MODE.categories.flatMap(category => QUESTIONS[category])) {
 const ITEM_KEYS = [...QUESTION_GROUPS.keys()];
 const ITEM_KEY_SET = new Set(ITEM_KEYS);
 const STORAGE_KEY = MODE.storageKey;
-const BANK_SIGNATURE = ITEM_KEYS.join("|");
 let roundNumber = 1;
 let completed = new Set();
 let itemDeck = [];
@@ -74,6 +107,30 @@ function meaningOverlap(a, b) {
   return meaningParts(a).some(left => meaningParts(b).some(right => left === right || left.includes(right) || right.includes(left)));
 }
 function display(value) { return value === "∅" ? "Không thêm gì" : value; }
+// Chọn 3 đáp án nhiễu, ưu tiên cùng bài; field lấy giá trị cần so của từng mục.
+function pickOptions(pool, item, field, extraEligible = () => true) {
+  const answer = field(item);
+  const eligible = other => other.id !== item.id && field(other) !== answer && extraEligible(other);
+  const nearby = shuffle(pool.filter(other => other.lesson === item.lesson && eligible(other)));
+  const rest = shuffle(pool.filter(other => other.lesson !== item.lesson && eligible(other)));
+  const values = [answer];
+  for (const other of [...nearby, ...rest]) {
+    const value = field(other);
+    if (!values.includes(value)) values.push(value);
+    if (values.length === 4) break;
+  }
+  return shuffle(values);
+}
+function vocabField(item, type) {
+  if (type === "vocab-meaning") return item.meaning;
+  if (type === "vocab-reading") return item.reading;
+  return item.word;
+}
+function vocabOptions(item, type) {
+  const suru = value => value.endsWith("（する）");
+  return pickOptions(VOCAB, item, other => vocabField(other, type), other =>
+    suru(other.word) === suru(item.word) && (type === "vocab-reading" || !meaningOverlap(other.meaning, item.meaning)));
+}
 function grammarConnection(item, variant) {
   return variant ? EXTRA_CONNECTIONS[item.id] : { connection: item.connection, answer: item.connectionAnswer, distractors: item.connectionDistractors };
 }
@@ -88,19 +145,9 @@ function wordField(item, type) {
   return item.kanji;
 }
 function wordOptions(item, type) {
-  const answer = wordField(item, type);
-  const eligible = other => other.id !== item.id && wordField(other, type) !== answer &&
+  return pickOptions(WORDS, item, other => wordField(other, type), other =>
     (type !== "hira-kanji" || other.hira !== item.hira) &&
-    (!["kanji-meaning", "meaning-kanji"].includes(type) || !meaningOverlap(other.meaning, item.meaning));
-  const nearby = shuffle(WORDS.filter(other => other.lesson === item.lesson && eligible(other)));
-  const rest = shuffle(WORDS.filter(other => other.lesson !== item.lesson && eligible(other)));
-  const values = [answer];
-  for (const other of [...nearby, ...rest]) {
-    const value = wordField(other, type);
-    if (!values.includes(value)) values.push(value);
-    if (values.length === 4) break;
-  }
-  return shuffle(values);
+    (!["kanji-meaning", "meaning-kanji"].includes(type) || !meaningOverlap(other.meaning, item.meaning)));
 }
 function grammarOptions(item, type, variant) {
   if (type === "sentence") return shuffle([item.answer, ...item.distractors]);
@@ -124,6 +171,14 @@ function questionParts(spec) {
     const text = type === "hira-kanji" ? item.hira : type === "meaning-kanji" ? item.meaning : item.kanji;
     return { text, answer: wordField(item, type), options: wordOptions(item, type), viQuestion: type === "meaning-kanji", viOptions: type === "kanji-meaning" };
   }
+  if (category === "vocab") {
+    const text = type === "meaning-vocab" ? item.meaning : item.word;
+    return { text, answer: vocabField(item, type), options: vocabOptions(item, type), viQuestion: type === "meaning-vocab", viOptions: type === "vocab-meaning" };
+  }
+  if (category === "exam") {
+    const marker = item.question.split("（　）").length === 2 ? "（　）" : undefined;
+    return { text: item.question, marker, answer: item.answer, options: shuffle(item.options) };
+  }
   if (type === "sentence") return { text: item.sentence, marker: "＿＿", answer: item.answer, options: grammarOptions(item, type, variant) };
   if (type === "connection") {
     const rule = grammarConnection(item, variant);
@@ -133,29 +188,24 @@ function questionParts(spec) {
   return { text: grammarExample(spec).vi, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
 function updateProgress() {
-  let words = 0;
-  let grammar = 0;
-  for (const key of completed) {
-    if (key.startsWith("kanji:")) words++;
-    else grammar++;
-  }
+  const counts = Object.fromEntries(MODE.categories.map(category => [category, 0]));
+  for (const key of completed) counts[key.split(":")[0]]++;
   $("roundCount").textContent = roundNumber;
-  $("wordRow").hidden = !MODE.categories.includes("kanji");
-  $("grammarRow").hidden = !MODE.categories.includes("grammar");
-  $("wordCount").textContent = `${words}/${WORDS.length} từ`;
-  $("grammarCount").textContent = `${grammar}/${GRAMMAR.length} cấu trúc`;
+  for (const category of MODE.categories) {
+    const info = CATEGORY_INFO[category];
+    $(`count-${category}`).textContent = `${counts[category]}/${info.total} ${info.unit}`;
+  }
 }
 function saveProgress() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      signature: BANK_SIGNATURE, roundNumber, completed: [...completed], itemDeck, variantDecks, pendingKey
-    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ roundNumber, completed: [...completed], itemDeck, variantDecks, pendingKey }));
   } catch { /* Trang vẫn dùng được khi trình duyệt chặn lưu trữ. */ }
 }
+// Mục mới thêm vào ngân hàng câu hỏi được nối vào lượt đang làm, không xoá tiến trình cũ.
 function restoreProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved || saved.signature !== BANK_SIGNATURE || !Number.isSafeInteger(saved.roundNumber) || saved.roundNumber < 1) return;
+    if (!saved || !Number.isSafeInteger(saved.roundNumber) || saved.roundNumber < 1) return;
     roundNumber = saved.roundNumber;
     completed = new Set((saved.completed || []).filter(key => ITEM_KEY_SET.has(key)));
     itemDeck = [...new Set((saved.itemDeck || []).filter(key => ITEM_KEY_SET.has(key) && !completed.has(key)))];
@@ -202,6 +252,8 @@ function renderQuestionText(text, marker, viQuestion, sentenceStyle) {
 function hintValues({ spec, parts }) {
   let values;
   if (spec.category === "kanji") values = { hira: spec.item.hira, meaning: spec.item.meaning };
+  else if (spec.category === "vocab") values = { hira: spec.item.reading === spec.item.word ? null : spec.item.reading, meaning: spec.item.meaning };
+  else if (spec.category === "exam") values = { hira: null, meaning: null };
   else {
     const example = grammarExample(spec);
     if (spec.type === "pattern-meaning") values = { hira: example.hira, meaning: null };
@@ -235,13 +287,19 @@ function renderQuestion(entry) {
   current = entry;
   const { spec, parts } = entry;
   $("feedback").hidden = true;
-  $("questionPrompt").textContent = PROMPTS[spec.type];
-  renderQuestionText(parts.text, parts.marker, parts.viQuestion, spec.category === "grammar");
+  const exam = spec.category === "exam" ? spec.item : null;
+  $("questionPrompt").textContent = exam
+    ? `Đề ${exam.sources[0].split(" câu")[0]} · ${EXAM_PROMPTS[exam.kind]}` : PROMPTS[spec.type];
+  const passage = exam?.passage ? EXAM_PASSAGES[exam.passage] : null;
+  $("passage").hidden = !passage;
+  if (passage) { $("passageTitle").textContent = passage.title; $("passageText").textContent = passage.text; }
+  renderQuestionText(parts.text, parts.marker, parts.viQuestion, ["grammar", "exam"].includes(spec.category));
+  $("questionText").classList.toggle("exam", Boolean(exam));
   renderHints(entry);
   const root = $("answers"); root.replaceChildren(); root.classList.remove("answered");
   for (const [index, option] of parts.options.entries()) {
     const button = document.createElement("button"); button.type = "button";
-    button.className = "answer" + (parts.viOptions ? " vi" : "");
+    button.className = "answer" + (parts.viOptions ? " vi" : "") + (option.length > 16 ? " long" : "");
     button.dataset.value = option;
     const number = document.createElement("span"); number.className = "number"; number.textContent = `${index + 1}.`;
     button.append(number, document.createTextNode(display(option)));
@@ -294,21 +352,22 @@ function showResult(entry) {
   const feedback = $("feedback"); feedback.className = "feedback " + (correct ? "good" : "bad"); feedback.replaceChildren();
   const title = document.createElement("strong"); title.textContent = correct ? "Đúng" : `Chưa đúng · ${display(parts.answer)}`;
   feedback.append(title);
-  if (spec.category === "kanji") {
-    const detail = document.createElement("span"); detail.className = "detail jp";
-    detail.textContent = `${spec.item.kanji} · ${spec.item.hira} — ${spec.item.meaning}`; feedback.append(detail);
-  } else {
-    const item = spec.item;
+  const item = spec.item;
+  let lines;
+  if (spec.category === "kanji") lines = [[`${item.kanji} · ${item.hira} — ${item.meaning}`, "jp"]];
+  else if (spec.category === "vocab") lines = [[`${item.word} · ${item.reading} — ${item.meaning}`, "jp"], [`Từ vựng bài ${item.lesson}`]];
+  else if (spec.category === "exam") lines = [[`Giải thích: ${item.explain}`], [`Nguồn: ${item.sources.join(", ")}`]];
+  else {
     const example = grammarExample(spec);
-    const lines = [
+    lines = [
       [`${item.pattern} — ${item.meaning}`], [`Cách nối: ${item.join}`], [`Ví dụ: ${example.full}`],
       [example.hira, "jp"], [`Dịch: ${example.vi}`]
     ];
-    for (const [line, extra] of lines) {
-      const detail = document.createElement("span"); detail.className = "detail" + (extra ? ` ${extra}` : "");
-      if (extra === "jp") detail.lang = "ja";
-      detail.textContent = line; feedback.append(detail);
-    }
+  }
+  for (const [line, extra] of lines) {
+    const detail = document.createElement("span"); detail.className = "detail" + (extra ? ` ${extra}` : "");
+    if (extra === "jp") detail.lang = "ja";
+    detail.textContent = line; feedback.append(detail);
   }
   const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "← xem câu trước · → hoặc Enter sang câu tiếp."; feedback.append(hint);
   feedback.hidden = false;
@@ -355,9 +414,18 @@ function applyMode() {
   $("quiz").setAttribute("aria-label", MODE.title);
   $("sidebarTitle").replaceChildren(MODE.heading[0], document.createElement("br"), MODE.heading[1]);
   $("sidebarIntro").textContent = MODE.intro;
+  for (const category of MODE.categories) {
+    const row = document.createElement("div");
+    const label = document.createElement("span"); label.textContent = CATEGORY_INFO[category].label;
+    const value = document.createElement("strong"); value.id = `count-${category}`;
+    row.append(label, value);
+    $("sidebarFacts").append(row);
+  }
   for (const link of document.querySelectorAll(".mode-switch a")) {
-    if (link.dataset.mode === MODE_NAME) link.setAttribute("aria-current", "page");
-    else link.removeAttribute("aria-current");
+    if (link.dataset.mode === MODE_NAME) {
+      link.setAttribute("aria-current", "page");
+      link.scrollIntoView?.({ block: "nearest", inline: "center" });
+    } else link.removeAttribute("aria-current");
   }
 }
 applyMode();

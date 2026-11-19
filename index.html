@@ -18,6 +18,8 @@
     <a href="index.html" data-mode="all">Tổng hợp</a>
     <a href="index.html?mode=kanji" data-mode="kanji">Kanji</a>
     <a href="index.html?mode=grammar" data-mode="grammar">Ngữ pháp</a>
+    <a href="index.html?mode=vocab" data-mode="vocab">Từ vựng</a>
+    <a href="index.html?mode=exam" data-mode="exam">Đề thi</a>
   </nav>
   <div class="backdrop" id="backdrop" hidden></div>
   <aside class="sidebar" id="sidebar" aria-label="Thông tin bộ đề" aria-hidden="true">
@@ -27,16 +29,18 @@
     </div>
     <h2 id="sidebarTitle">Luyện đề<br>tổng hợp.</h2>
     <p id="sidebarIntro">Kanji và ngữ pháp bài 6–10 được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.</p>
-    <div class="sidebar-facts">
+    <div class="sidebar-facts" id="sidebarFacts">
       <div><span>Lượt hiện tại</span><strong id="roundCount">1</strong></div>
-      <div id="wordRow"><span>Kanji đã trả lời</span><strong id="wordCount">0/283 từ</strong></div>
-      <div id="grammarRow"><span>Ngữ pháp đã trả lời</span><strong id="grammarCount">0/68 cấu trúc</strong></div>
     </div>
     <p class="sidebar-hint">Câu bỏ qua sẽ quay lại trong lượt này. Tiến trình được lưu trên trình duyệt. Phím 1–4 để chọn đáp án; ←, → hoặc Enter để chuyển câu.</p>
   </aside>
 
   <main class="quiz" id="quiz" aria-label="Đề kiểm tra tổng hợp">
     <h1 class="question-prompt" id="questionPrompt"></h1>
+    <section class="passage" id="passage" aria-label="Bài đọc" hidden>
+      <h2 id="passageTitle" lang="ja"></h2>
+      <p id="passageText" lang="ja"></p>
+    </section>
     <p class="question-text" id="questionText"></p>
     <div class="study-hints" aria-label="Gợi ý học tập">
       <div class="hint-control">
@@ -59,6 +63,8 @@
   <script src="data.js"></script>
   <script src="grammar-data.js"></script>
   <script src="grammar-examples.js"></script>
+  <script src="vocab-data.js"></script>
+  <script src="exam-data.js"></script>
   <script src="quiz.js"></script>
 </body>
 </html>
