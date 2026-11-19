@@ -32,6 +32,16 @@
   <main class="quiz" aria-label="Đề kiểm tra tổng hợp">
     <h1 class="question-prompt" id="questionPrompt"></h1>
     <p class="question-text" id="questionText"></p>
+    <div class="study-hints" aria-label="Gợi ý học tập">
+      <div class="hint-control">
+        <button id="hiraButton" type="button" aria-controls="hiraHint" aria-expanded="false">Hiện hira</button>
+        <span id="hiraHint" class="hint-value jp" hidden></span>
+      </div>
+      <div class="hint-control">
+        <button id="meaningButton" type="button" aria-controls="meaningHint" aria-expanded="false">Hiện dịch</button>
+        <span id="meaningHint" class="hint-value" hidden></span>
+      </div>
+    </div>
     <div class="answers" id="answers"></div>
     <nav class="question-nav" aria-label="Chuyển câu hỏi">
       <button id="previousButton" type="button">← Câu trước</button>

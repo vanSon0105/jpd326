@@ -11,6 +11,12 @@ const PROMPTS = {
   "pattern-meaning": "Cấu trúc này có nghĩa gì?",
   "meaning-pattern": "Ý nghĩa này ứng với cấu trúc nào?"
 };
+const GRAMMAR_KANA = [
+  [/囲ま/g, "かこま"], [/占め/g, "しめ"], [/比べ/g, "くらべ"],
+  [/備え/g, "そなえ"], [/代わ/g, "かわ"], [/限/g, "かぎ"],
+  [/中心/g, "ちゅうしん"], [/通して/g, "とおして"], [/通じて/g, "つうじて"],
+  [/思/g, "おも"], [/反/g, "はん"]
+];
 const QUESTIONS = {
   kanji: WORDS.flatMap(item => KANJI_TYPES.map(type => ({ category: "kanji", type, item, id: `k-${item.id}-${type}` }))),
   grammar: GRAMMAR.flatMap(item => GRAMMAR_TYPES.flatMap(type => {
@@ -38,6 +44,9 @@ function meaningOverlap(a, b) {
   return meaningParts(a).some(left => meaningParts(b).some(right => left === right || left.includes(right) || right.includes(left)));
 }
 function display(value) { return value === "∅" ? "Không thêm gì" : value; }
+function grammarKana(pattern) {
+  return GRAMMAR_KANA.reduce((text, [source, reading]) => text.replace(source, reading), pattern);
+}
 function grammarConnection(item, variant) {
   return variant ? EXTRA_CONNECTIONS[item.id] : { connection: item.connection, answer: item.connectionAnswer, distractors: item.connectionDistractors };
 }
@@ -113,12 +122,35 @@ function renderQuestionText(text, marker, viQuestion) {
   const blank = document.createElement("span"); blank.className = "blank"; blank.textContent = marker;
   root.append(document.createTextNode(before), blank, document.createTextNode(after));
 }
+function renderHints(entry) {
+  const { spec } = entry;
+  const values = {
+    hira: spec.category === "kanji" ? spec.item.hira : `Hira cấu trúc: ${grammarKana(spec.item.pattern)}`,
+    meaning: spec.category === "kanji" ? spec.item.meaning : `Nghĩa cấu trúc: ${spec.item.meaning}`
+  };
+  for (const [kind, value] of Object.entries(values)) {
+    const button = $(kind === "hira" ? "hiraButton" : "meaningButton");
+    const hint = $(kind === "hira" ? "hiraHint" : "meaningHint");
+    const shown = Boolean(entry[`${kind}Shown`]);
+    button.textContent = `${shown ? "Ẩn" : "Hiện"} ${kind === "hira" ? "hira" : "dịch"}`;
+    button.setAttribute("aria-expanded", String(shown));
+    hint.textContent = value;
+    hint.hidden = !shown;
+  }
+}
+function toggleHint(kind) {
+  if (!current) return;
+  const key = `${kind}Shown`;
+  current[key] = !current[key];
+  renderHints(current);
+}
 function renderQuestion(entry) {
   current = entry;
   const { spec, parts } = entry;
   $("feedback").hidden = true;
   $("questionPrompt").textContent = PROMPTS[spec.type];
   renderQuestionText(parts.text, parts.marker, parts.viQuestion);
+  renderHints(entry);
   const root = $("answers"); root.replaceChildren(); root.classList.remove("answered");
   for (const [index, option] of parts.options.entries()) {
     const button = document.createElement("button"); button.type = "button";
@@ -136,7 +168,7 @@ function nextQuestion() {
   if (historyIndex < history.length - 1) historyIndex++;
   else {
     const spec = drawSpec();
-    history.push({ spec, parts: questionParts(spec), chosen: null });
+    history.push({ spec, parts: questionParts(spec), chosen: null, hiraShown: false, meaningShown: false });
     historyIndex++;
   }
   renderQuestion(history[historyIndex]);
@@ -188,10 +220,17 @@ $("closeSidebar").onclick = () => setSidebar(false);
 $("backdrop").onclick = () => setSidebar(false);
 $("previousButton").onclick = previousQuestion;
 $("nextButton").onclick = nextQuestion;
+$("hiraButton").onclick = () => toggleHint("hira");
+$("meaningButton").onclick = () => toggleHint("meaning");
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") { setSidebar(false); return; }
   if ($("sidebar").classList.contains("open")) return;
   if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key === "Enter" && [$("hiraButton"), $("meaningButton")].includes(event.target)) {
+    event.preventDefault();
+    toggleHint(event.target === $("hiraButton") ? "hira" : "meaning");
+    return;
+  }
   if (event.key === "Enter" && [$("menuButton"), $("previousButton"), $("nextButton")].includes(event.target)) return;
   if (event.key === "ArrowLeft") { event.preventDefault(); previousQuestion(); return; }
   if (event.key === "ArrowRight" || event.key === "Enter") { event.preventDefault(); nextQuestion(); return; }
