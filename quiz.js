@@ -8,15 +8,9 @@ const PROMPTS = {
   "meaning-kanji": "Nghĩa này tương ứng với từ Kanji nào?",
   sentence: "Chọn phần phù hợp để hoàn thành câu.",
   connection: "Chọn dạng nối đúng vào chỗ trống.",
-  "pattern-meaning": "Cấu trúc này có nghĩa gì?",
-  "meaning-pattern": "Ý nghĩa này ứng với cấu trúc nào?"
+  "pattern-meaning": "Ngữ pháp dùng trong câu này có nghĩa gì?",
+  "meaning-pattern": "Bản dịch này ứng với cấu trúc nào?"
 };
-const GRAMMAR_KANA = [
-  [/囲ま/g, "かこま"], [/占め/g, "しめ"], [/比べ/g, "くらべ"],
-  [/備え/g, "そなえ"], [/代わ/g, "かわ"], [/限/g, "かぎ"],
-  [/中心/g, "ちゅうしん"], [/通して/g, "とおして"], [/通じて/g, "つうじて"],
-  [/思/g, "おも"], [/反/g, "はん"]
-];
 const QUESTIONS = {
   kanji: WORDS.flatMap(item => KANJI_TYPES.map(type => ({ category: "kanji", type, item, id: `k-${item.id}-${type}` }))),
   grammar: GRAMMAR.flatMap(item => GRAMMAR_TYPES.flatMap(type => {
@@ -59,11 +53,13 @@ function meaningOverlap(a, b) {
   return meaningParts(a).some(left => meaningParts(b).some(right => left === right || left.includes(right) || right.includes(left)));
 }
 function display(value) { return value === "∅" ? "Không thêm gì" : value; }
-function grammarKana(pattern) {
-  return GRAMMAR_KANA.reduce((text, [source, reading]) => text.replace(source, reading), pattern);
-}
 function grammarConnection(item, variant) {
   return variant ? EXTRA_CONNECTIONS[item.id] : { connection: item.connection, answer: item.connectionAnswer, distractors: item.connectionDistractors };
+}
+function grammarExample(spec) {
+  const examples = GRAMMAR_EXAMPLES[spec.item.id];
+  if (spec.type !== "connection") return examples.sentence;
+  return spec.variant ? examples.extraConnection : examples.connection;
 }
 function wordField(item, type) {
   if (type === "kanji-hira") return item.hira;
@@ -110,10 +106,10 @@ function questionParts(spec) {
   if (type === "sentence") return { text: item.sentence, marker: "＿＿", answer: item.answer, options: grammarOptions(item, type, variant) };
   if (type === "connection") {
     const rule = grammarConnection(item, variant);
-    return { text: rule.connection, marker: "［　］", answer: rule.answer, options: grammarOptions(item, type, variant) };
+    return { text: grammarExample(spec).question, marker: "［　］", answer: rule.answer, options: grammarOptions(item, type, variant) };
   }
-  if (type === "pattern-meaning") return { text: item.pattern, answer: item.meaning, options: grammarOptions(item, type, variant), viOptions: true };
-  return { text: item.meaning, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
+  if (type === "pattern-meaning") return { text: grammarExample(spec).full, answer: item.meaning, options: grammarOptions(item, type, variant), viOptions: true };
+  return { text: grammarExample(spec).vi, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
 function updateProgress() {
   let words = 0;
@@ -170,9 +166,9 @@ function drawSpec() {
   saveProgress();
   return spec;
 }
-function renderQuestionText(text, marker, viQuestion) {
+function renderQuestionText(text, marker, viQuestion, sentenceStyle) {
   const root = $("questionText"); root.replaceChildren();
-  root.className = "question-text" + (viQuestion ? " vi" : "") + (marker ? " sentence" : "");
+  root.className = "question-text" + (viQuestion ? " vi" : "") + (sentenceStyle ? " sentence" : "");
   root.lang = viQuestion ? "vi" : "ja";
   if (!marker) { root.textContent = text; return; }
   const [before, after] = text.split(marker);
@@ -181,9 +177,10 @@ function renderQuestionText(text, marker, viQuestion) {
 }
 function renderHints(entry) {
   const { spec } = entry;
+  const example = spec.category === "grammar" ? grammarExample(spec) : null;
   const values = {
-    hira: spec.category === "kanji" ? spec.item.hira : `Hira cấu trúc: ${grammarKana(spec.item.pattern)}`,
-    meaning: spec.category === "kanji" ? spec.item.meaning : `Nghĩa cấu trúc: ${spec.item.meaning}`
+    hira: example ? example.hira : spec.item.hira,
+    meaning: example ? example.vi : spec.item.meaning
   };
   for (const [kind, value] of Object.entries(values)) {
     const button = $(kind === "hira" ? "hiraButton" : "meaningButton");
@@ -206,7 +203,7 @@ function renderQuestion(entry) {
   const { spec, parts } = entry;
   $("feedback").hidden = true;
   $("questionPrompt").textContent = PROMPTS[spec.type];
-  renderQuestionText(parts.text, parts.marker, parts.viQuestion);
+  renderQuestionText(parts.text, parts.marker, parts.viQuestion, spec.category === "grammar");
   renderHints(entry);
   const root = $("answers"); root.replaceChildren(); root.classList.remove("answered");
   for (const [index, option] of parts.options.entries()) {
@@ -269,7 +266,7 @@ function showResult(entry) {
     detail.textContent = `${spec.item.kanji} · ${spec.item.hira} — ${spec.item.meaning}`; feedback.append(detail);
   } else {
     const item = spec.item;
-    const lines = [`${item.pattern} — ${item.meaning}`, `Cách nối: ${item.join}`, `Ví dụ: ${item.sentence.replace("＿＿", item.answer)}`];
+    const lines = [`${item.pattern} — ${item.meaning}`, `Cách nối: ${item.join}`, `Ví dụ: ${grammarExample(spec).full}`];
     for (const line of lines) { const detail = document.createElement("span"); detail.className = "detail"; detail.textContent = line; feedback.append(detail); }
   }
   const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "← xem câu trước · → hoặc Enter sang câu tiếp."; feedback.append(hint);
