@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,11 +8,15 @@
   <title>Luyện đề tổng hợp · Kanji &amp; Ngữ pháp</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <button class="menu-button" id="menuButton" type="button" aria-label="Mở thanh bên" aria-controls="sidebar" aria-expanded="false">
+  <button class="menu-button" id="menuButton" type="button" aria-label="Mở thanh bên" aria-controls="sidebar"
+    aria-expanded="false">
     <span class="menu-lines" aria-hidden="true"></span>
   </button>
   <nav class="mode-switch" aria-label="Chọn bộ đề">
@@ -30,19 +35,30 @@
     <h2 id="sidebarTitle">Luyện đề<br>tổng hợp.</h2>
     <div class="sidebar-facts" id="sidebarFacts">
       <div><span>Lượt hiện tại</span><strong id="roundCount">1</strong></div>
-      <div id="mixRow" class="mix-row" hidden><span>Gồm các phần</span><span class="mix-options" id="mixOptions"></span>
-        <small id="mixNote" hidden>Đóng thanh bên để áp dụng.</small></div>
-      <div id="kanjiMeaningRow"><label for="kanjiMeaning">Hỏi cả nghĩa Kanji<small>Thêm dạng Kanji → nghĩa và nghĩa → Kanji</small></label>
-        <input type="checkbox" id="kanjiMeaning"></div>
+      <div id="mixRow" class="mix-row" hidden><span>Phần tổng hợp gồm các phần</span><span class="mix-options"
+          id="mixOptions"></span>
+        <small id="mixNote" hidden>Đóng thanh bên để áp dụng.</small>
+      </div>
+      <div id="kanjiMeaningRow"><label for="kanjiMeaning">Hỏi cả nghĩa Kanji<small>Thêm dạng Kanji → nghĩa và nghĩa →
+            Kanji</small></label>
+        <input type="checkbox" id="kanjiMeaning">
+      </div>
       <div><label for="chunkSize">Số câu mỗi phần</label>
-        <select id="chunkSize"><option value="6">6 câu</option><option value="10">10 câu</option><option value="20">20 câu</option></select></div>
+        <select id="chunkSize">
+          <option value="6">6 câu</option>
+          <option value="10">10 câu</option>
+          <option value="20">20 câu</option>
+        </select>
+      </div>
     </div>
   </aside>
 
   <main class="quiz" id="quiz" aria-label="Đề kiểm tra tổng hợp">
     <div class="progress">
-      <div class="progress-bar" id="progressBar" role="progressbar" aria-label="Số câu đã thuộc" aria-valuemin="0" aria-valuenow="0">
-        <span class="progress-track" id="progressTrack"><span class="progress-window"><span class="progress-strip" id="progressStrip"></span></span><span class="progress-count done" id="progressDone">0</span></span>
+      <div class="progress-bar" id="progressBar" role="progressbar" aria-label="Số câu đã thuộc" aria-valuemin="0"
+        aria-valuenow="0">
+        <span class="progress-track" id="progressTrack"><span class="progress-window"><span class="progress-strip"
+              id="progressStrip"></span></span><span class="progress-count done" id="progressDone">0</span></span>
         <span class="progress-count total" id="progressTotal">0</span>
       </div>
       <p class="progress-note" id="progressNote"></p>
@@ -78,4 +94,5 @@
   <script src="exam-data.js"></script>
   <script src="quiz.js"></script>
 </body>
+
 </html>
