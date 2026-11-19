@@ -42,10 +42,22 @@ const CATEGORY_INFO = {
   vocab: { label: "Từ vựng đã trả lời", total: VOCAB.length, unit: "từ" },
   exam: { label: "Câu đề thi đã làm", total: EXAM.length, unit: "câu" }
 };
+const CATEGORY_NAMES = { kanji: "Kanji", grammar: "Ngữ pháp", vocab: "Từ vựng", exam: "Đề thi" };
+const ALL_CATEGORIES = Object.keys(CATEGORY_NAMES);
+// Các phần người học chọn đưa vào chế độ Tổng hợp (lưu trên trình duyệt, mặc định đủ cả 4).
+const MIX_KEY = "jpd326-mix-categories";
+function storedMix() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MIX_KEY));
+    const picked = Array.isArray(saved) ? ALL_CATEGORIES.filter(category => saved.includes(category)) : [];
+    if (picked.length) return picked;
+  } catch { /* Dùng mặc định. */ }
+  return ALL_CATEGORIES;
+}
 // Chế độ đề lấy từ ?mode= trên URL; mỗi chế độ lưu tiến trình riêng.
 const MODES = {
   all: {
-    categories: ["kanji", "grammar", "vocab", "exam"], title: "Luyện đề tổng hợp · Bài 6–10", heading: ["Luyện đề", "tổng hợp."],
+    categories: storedMix(), title: "Luyện đề tổng hợp · Bài 6–10", heading: ["Luyện đề", "tổng hợp."],
     storageKey: "jpd326-quiz-coverage-v1"
   },
   vocab: {
@@ -69,6 +81,7 @@ const MODE_NAME = Object.hasOwn(MODES, new URLSearchParams(location.search).get(
   ? new URLSearchParams(location.search).get("mode") : "all";
 const MODE = MODES[MODE_NAME];
 const itemKey = spec => `${spec.category}:${spec.item.id}`;
+const ALL_ITEM_KEYS = new Set(ALL_CATEGORIES.flatMap(category => QUESTIONS[category].map(itemKey)));
 const QUESTION_BY_ID = new Map();
 const QUESTION_GROUPS = new Map();
 for (const spec of MODE.categories.flatMap(category => QUESTIONS[category])) {
@@ -193,7 +206,7 @@ function questionParts(spec) {
   return { text: grammarExample(spec).vi, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
 function freshRound(round) {
-  return { round, pool: shuffle(ITEM_KEYS), main: [], wrongs: [], retry: [], carry: [], mastered: new Set(), part: 0, extra: false, partItems: [] };
+  return { round, pool: shuffle(ITEM_KEYS), main: [], wrongs: [], retry: [], carry: [], mastered: new Set(), part: 0, extra: false, partItems: [], parked: [] };
 }
 // Chuẩn bị hàng đợi: hết lượt chính thì sang lượt sửa, hết phần thì mở phần mới, hết lượt thì xáo lại.
 function ensureQueue(lastKey) {
@@ -295,7 +308,8 @@ function updateProgress() {
 }
 function saveProgress() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, ...state, mastered: [...state.mastered], variantDecks }));
+    // parked: câu đã thuộc của các phần đang bị bỏ khỏi Tổng hợp, giữ lại để chọn lại sau không mất tiến độ.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, ...state, mastered: [...state.mastered, ...state.parked], parked: undefined, variantDecks }));
   } catch { /* Trang vẫn dùng được khi trình duyệt chặn lưu trữ. */ }
 }
 // Khôi phục tiến trình; mục mới thêm vào ngân hàng câu hỏi được nối vào cuối lượt đang làm.
@@ -317,13 +331,17 @@ function restoreProgress() {
       // partItems có thể trùng với các danh sách trên nên lọc riêng, không qua keep().
       state.partItems = Array.isArray(saved.partItems) ? saved.partItems.filter(key => ITEM_KEY_SET.has(key))
         : [...state.main, ...state.wrongs, ...state.retry];
+      state.parked = (Array.isArray(saved.mastered) ? saved.mastered : [])
+        .filter(key => !ITEM_KEY_SET.has(key) && ALL_ITEM_KEYS.has(key));
     } else {
       // Bản lưu cũ: mục đã trả lời được tính là đã thuộc, phần còn lại học theo phần.
       state = freshRound(saved.roundNumber);
       state.mastered = new Set(keep(saved.completed));
       state.pool = [];
     }
-    state.pool.push(...shuffle(ITEM_KEYS.filter(key => !seen.has(key))));
+    // Mục mới (vd. vừa thêm một phần vào Tổng hợp) được trộn vào các câu chưa học.
+    const missing = ITEM_KEYS.filter(key => !seen.has(key));
+    if (missing.length) state.pool = shuffle([...state.pool, ...missing]);
     variantDecks = {};
     for (const [key, ids] of Object.entries(saved.variantDecks || {})) {
       if (ITEM_KEY_SET.has(key) && Array.isArray(ids)) {
@@ -484,7 +502,10 @@ function showResult(entry) {
   const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "← xem câu trước · → hoặc Enter sang câu tiếp."; feedback.append(hint);
   feedback.hidden = false;
 }
+let mixChanged = false;
 function setSidebar(open) {
+  // Đổi các phần của Tổng hợp thì tải lại trang khi đóng thanh bên để dựng lại ngân hàng câu hỏi.
+  if (!open && mixChanged) { location.reload(); return; }
   $("sidebar").classList.toggle("open", open);
   $("sidebar").setAttribute("aria-hidden", String(!open));
   $("menuButton").setAttribute("aria-expanded", String(open));
@@ -525,6 +546,24 @@ function applyMode() {
   document.title = MODE.title;
   $("quiz").setAttribute("aria-label", MODE.title);
   $("sidebarTitle").replaceChildren(MODE.heading[0], document.createElement("br"), MODE.heading[1]);
+  $("mixRow").hidden = MODE_NAME !== "all";
+  if (MODE_NAME === "all") {
+    for (const category of ALL_CATEGORIES) {
+      const option = document.createElement("label"); option.className = "mix-option";
+      const box = document.createElement("input"); box.type = "checkbox"; box.value = category;
+      box.checked = MODE.categories.includes(category);
+      box.onchange = () => {
+        const boxes = [...$("mixOptions").querySelectorAll("input")];
+        const picked = boxes.filter(item => item.checked).map(item => item.value);
+        if (!picked.length) { box.checked = true; return; } // Luôn giữ ít nhất một phần.
+        try { localStorage.setItem(MIX_KEY, JSON.stringify(picked)); } catch { /* Không lưu được thì bỏ qua. */ }
+        mixChanged = picked.join() !== MODE.categories.join();
+        $("mixNote").hidden = !mixChanged;
+      };
+      option.append(box, document.createTextNode(CATEGORY_NAMES[category]));
+      $("mixOptions").append(option);
+    }
+  }
   $("kanjiMeaningRow").hidden = !MODE.categories.includes("kanji");
   $("kanjiMeaning").checked = kanjiMeaning;
   $("kanjiMeaning").onchange = event => {
