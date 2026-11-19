@@ -61,7 +61,7 @@ const MODES = {
   },
   kanji: {
     categories: ["kanji"], title: "Luyện Kanji · Bài 6–10", heading: ["Luyện", "Kanji."],
-    intro: `${WORDS.length} từ Kanji bài 6–10: cách đọc, nghĩa và ngược lại. Trả lời đủ mọi từ rồi lượt mới được xáo lại.`,
+    intro: `${WORDS.length} từ Kanji bài 6–10: Kanji ↔ cách đọc, có thể bật thêm Kanji ↔ nghĩa bên dưới. Trả lời đủ mọi từ rồi lượt mới được xáo lại.`,
     storageKey: "jpd326-quiz-coverage-v1-kanji"
   },
   grammar: {
@@ -88,6 +88,14 @@ const STORAGE_KEY = MODE.storageKey;
 const CHUNK_SIZES = [6, 10, 20];
 const CHUNK_SIZE_KEY = "jpd326-chunk-size";
 let chunkSize = 6;
+// Mặc định Kanji chỉ hỏi cách đọc (Kanji ↔ hira); tích ô trong thanh bên để hỏi cả nghĩa.
+const KANJI_MEANING_KEY = "jpd326-kanji-meaning";
+const KANJI_MEANING_TYPES = ["kanji-meaning", "meaning-kanji"];
+let kanjiMeaning = false;
+function variantAllowed(id) {
+  const spec = QUESTION_BY_ID.get(id);
+  return kanjiMeaning || spec.category !== "kanji" || !KANJI_MEANING_TYPES.includes(spec.type);
+}
 // Học theo phần: mỗi phần hỏi lượt chính (main), câu sai được hỏi lại ở cuối phần (retry);
 // sai tiếp thì chuyển sang đầu phần sau (carry). Hết câu mới thì câu nợ được hỏi lại tới khi đúng.
 let state = freshRound(1);
@@ -247,6 +255,7 @@ function restoreProgress() {
   try {
     const stored = Number(localStorage.getItem(CHUNK_SIZE_KEY));
     if (CHUNK_SIZES.includes(stored)) chunkSize = stored;
+    kanjiMeaning = localStorage.getItem(KANJI_MEANING_KEY) === "1";
   } catch { /* Dùng kích thước mặc định. */ }
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -276,7 +285,8 @@ function drawSpec(lastKey) {
   ensureQueue(lastKey);
   const phase = activePhase();
   const key = (phase === "main" ? state.main : state.retry)[0];
-  if (!variantDecks[key]?.length) variantDecks[key] = shuffle(QUESTION_GROUPS.get(key));
+  variantDecks[key] = (variantDecks[key] || []).filter(variantAllowed);
+  if (!variantDecks[key].length) variantDecks[key] = shuffle(QUESTION_GROUPS.get(key).filter(variantAllowed));
   const spec = QUESTION_BY_ID.get(variantDecks[key].shift());
   updateProgress();
   saveProgress();
@@ -470,6 +480,12 @@ function applyMode() {
     segment.append(document.createElement("span"));
     $("progressTrack").append(segment);
   }
+  $("kanjiMeaningRow").hidden = !MODE.categories.includes("kanji");
+  $("kanjiMeaning").checked = kanjiMeaning;
+  $("kanjiMeaning").onchange = event => {
+    kanjiMeaning = event.target.checked;
+    try { localStorage.setItem(KANJI_MEANING_KEY, kanjiMeaning ? "1" : "0"); } catch { /* Chỉ áp dụng trong phiên này. */ }
+  };
   $("chunkSize").value = String(chunkSize);
   $("chunkSize").onchange = event => {
     const size = Number(event.target.value);
