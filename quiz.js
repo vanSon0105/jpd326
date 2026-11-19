@@ -219,6 +219,52 @@ function ensureQueue(lastKey) {
   }
 }
 function activePhase() { return state.main.length ? "main" : "retry"; }
+const SEGMENTS = 6;
+let shownWindow = null;
+let finishSlide = null;
+function makeSegment() {
+  const segment = document.createElement("span"); segment.className = "progress-segment";
+  segment.append(document.createElement("span"));
+  return segment;
+}
+// Vẽ các khúc của thanh tiến độ. Khi sang phần mới, dải khúc trượt sang trái: khúc đã xong
+// bên trái trượt ra khỏi khung, khúc mới trượt vào từ bên phải.
+function renderSegments(first, n, fillOf, fadeLast) {
+  finishSlide?.();
+  const strip = $("progressStrip");
+  strip.style.setProperty("--n", String(n));
+  const shift = shownWindow && shownWindow.n === n ? first - shownWindow.first : 0;
+  const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const slide = shift > 0 && shift <= 3 && strip.children.length === n && !reduced;
+  shownWindow = { first, n };
+  if (slide) for (let i = 0; i < shift; i++) strip.append(makeSegment());
+  else {
+    while (strip.children.length > n) strip.lastElementChild.remove();
+    while (strip.children.length < n) strip.append(makeSegment());
+  }
+  const segments = [...strip.children];
+  const base = slide ? first - shift : first;
+  segments.forEach((segment, i) => {
+    segment.firstElementChild.style.width = `${fillOf(base + i) * 100}%`;
+    segment.classList.toggle("fade", fadeLast && i === segments.length - 1);
+  });
+  if (!slide) return;
+  strip.style.transition = "none";
+  strip.style.transform = "translateX(0)";
+  void strip.offsetWidth;
+  strip.style.transition = "";
+  strip.style.transform = `translateX(calc(${-shift} * (100% + var(--gap)) / ${n}))`;
+  const timer = setTimeout(() => finishSlide?.(), 520);
+  finishSlide = () => {
+    clearTimeout(timer);
+    finishSlide = null;
+    for (let i = 0; i < shift; i++) strip.firstElementChild.remove();
+    strip.style.transition = "none";
+    strip.style.transform = "";
+    void strip.offsetWidth;
+    strip.style.transition = "";
+  };
+}
 function updateProgress() {
   const total = ITEM_KEYS.length;
   const done = state.mastered.size;
@@ -227,20 +273,13 @@ function updateProgress() {
   $("progressBar").setAttribute("aria-valuenow", String(done));
   $("progressBar").setAttribute("aria-valuemax", String(total));
   // Mỗi khúc là một phần; thanh hiện tối đa 6 khúc quanh phần đang học (giữ 2 phần đã xong phía trước).
-  const segments = $("progressTrack").querySelectorAll(".progress-segment");
   const currentPart = Math.max(1, state.part + (state.extra ? 1 : 0));
   const totalParts = currentPart + Math.ceil(state.pool.length / chunkSize);
-  const first = Math.max(1, Math.min(currentPart - 2, totalParts - segments.length + 1));
-  const n = Math.min(segments.length, totalParts - first + 1);
+  const first = Math.max(1, Math.min(currentPart - 2, totalParts - SEGMENTS + 1));
+  const n = Math.min(SEGMENTS, totalParts - first + 1);
   const items = state.partItems || [];
   const partFill = items.length ? items.filter(key => state.mastered.has(key)).length / items.length : 0;
-  for (let i = 0; i < segments.length; i++) {
-    const part = first + i;
-    segments[i].hidden = i >= n;
-    segments[i].classList.toggle("fade", i === n - 1 && part < totalParts);
-    const fill = part < currentPart ? 1 : part === currentPart ? partFill : 0;
-    segments[i].firstElementChild.style.width = `${fill * 100}%`;
-  }
+  renderSegments(first, n, part => part < currentPart ? 1 : part === currentPart ? partFill : 0, first + n - 1 < totalParts);
   // Vòng tròn số câu đã thuộc nằm ở điểm cuối phần đã tô (tính cả khoảng hở giữa các khúc).
   $("progressDone").style.left =
     `calc(${currentPart - first} * (100% + var(--gap)) / ${n} + ${partFill} * (100% - ${n - 1} * var(--gap)) / ${n})`;
@@ -492,11 +531,6 @@ function applyMode() {
   $("quiz").setAttribute("aria-label", MODE.title);
   $("sidebarTitle").replaceChildren(MODE.heading[0], document.createElement("br"), MODE.heading[1]);
   $("sidebarIntro").textContent = MODE.intro;
-  for (let i = 0; i < 6; i++) {
-    const segment = document.createElement("span"); segment.className = "progress-segment";
-    segment.append(document.createElement("span"));
-    $("progressTrack").append(segment);
-  }
   $("kanjiMeaningRow").hidden = !MODE.categories.includes("kanji");
   $("kanjiMeaning").checked = kanjiMeaning;
   $("kanjiMeaning").onchange = event => {
