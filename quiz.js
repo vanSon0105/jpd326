@@ -202,7 +202,11 @@ function questionParts(spec) {
     const rule = grammarConnection(item, variant);
     return { text: grammarExample(spec).question, marker: "［　］", answer: rule.answer, options: grammarOptions(item, type, variant) };
   }
-  if (type === "pattern-meaning") return { text: grammarExample(spec).full, answer: item.meaning, options: grammarOptions(item, type, variant), viOptions: true };
+  if (type === "pattern-meaning") {
+    // Gạch chân phần ngữ pháp đang hỏi trong câu ví dụ.
+    const [before, after] = item.sentence.split("＿＿");
+    return { text: grammarExample(spec).full, mark: [before, item.answer, after], answer: item.meaning, options: grammarOptions(item, type, variant), viOptions: true };
+  }
   return { text: grammarExample(spec).vi, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
 function freshRound(round) {
@@ -372,10 +376,16 @@ function settle(entry, correct) {
   else if (entry.phase === "main") state.wrongs.push(entry.key);
   else state.carry.push(entry.key);
 }
-function renderQuestionText(text, marker, viQuestion, sentenceStyle) {
+// Ghi đoạn chữ vào phần tử, trong đó phần giữa của mark được gạch chân.
+function renderMarked(root, [before, middle, after]) {
+  const span = document.createElement("span"); span.className = "grammar-mark"; span.textContent = middle;
+  root.replaceChildren(document.createTextNode(before), span, document.createTextNode(after));
+}
+function renderQuestionText(text, marker, viQuestion, sentenceStyle, mark) {
   const root = $("questionText"); root.replaceChildren();
   root.className = "question-text" + (viQuestion ? " vi" : "") + (sentenceStyle ? " sentence" : "");
   root.lang = viQuestion ? "vi" : "ja";
+  if (mark && mark.join("") === text) { renderMarked(root, mark); return; }
   if (!marker) { root.textContent = text; return; }
   const [before, after] = text.split(marker);
   const blank = document.createElement("span"); blank.className = "blank"; blank.textContent = marker;
@@ -407,6 +417,14 @@ function renderHints(entry) {
     button.textContent = `${shown ? "Ẩn" : "Hiện"} ${kind === "hira" ? "hira" : "dịch"}`;
     button.setAttribute("aria-expanded", String(shown));
     hint.textContent = value;
+    // Câu "ngữ pháp này nghĩa gì": gạch chân cả phần ngữ pháp trong dòng hira.
+    if (kind === "hira" && entry.spec.type === "pattern-meaning" && value) {
+      const example = GRAMMAR_EXAMPLES[entry.spec.item.id].sentence;
+      const [head, tail] = example.questionHira.split("＿＿");
+      if (value === example.hira && value.startsWith(head) && value.endsWith(tail) && value.length > head.length + tail.length) {
+        renderMarked(hint, [head, value.slice(head.length, value.length - tail.length), tail]);
+      }
+    }
     hint.hidden = !shown;
   }
 }
@@ -446,7 +464,7 @@ function renderQuestion(entry) {
   $("questionPrompt").textContent = exam
     ? `Đề ${exam.sources[0].split(" câu")[0]} · ${EXAM_PROMPTS[exam.kind]}` : PROMPTS[spec.type];
   renderPassage(entry);
-  renderQuestionText(parts.text, parts.marker, parts.viQuestion, ["grammar", "exam"].includes(spec.category));
+  renderQuestionText(parts.text, parts.marker, parts.viQuestion, ["grammar", "exam"].includes(spec.category), parts.mark);
   $("questionText").classList.toggle("exam", Boolean(exam));
   renderHints(entry);
   const root = $("answers"); root.replaceChildren(); root.classList.remove("answered");
