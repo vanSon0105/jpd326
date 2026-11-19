@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const KANJI_TYPES = ["kanji-hira", "hira-kanji", "kanji-meaning", "meaning-kanji"];
-const GRAMMAR_TYPES = ["sentence", "connection", "pattern-meaning", "meaning-pattern"];
+const GRAMMAR_TYPES = ["sentence", "connection", "pattern-meaning"];
 const VOCAB_TYPES = ["vocab-meaning", "meaning-vocab", "vocab-reading"];
 const EXAM_PROMPTS = {
   fill: "Chọn đáp án đúng điền vào chỗ trống.",
@@ -23,7 +23,6 @@ const PROMPTS = {
   sentence: "Chọn phần phù hợp để hoàn thành câu.",
   connection: "Chọn dạng nối đúng vào chỗ trống.",
   "pattern-meaning": "Ngữ pháp dùng trong câu này có nghĩa gì?",
-  "meaning-pattern": "Bản dịch này ứng với cấu trúc nào?"
 };
 const QUESTIONS = {
   kanji: WORDS.flatMap(item => KANJI_TYPES.map(type => ({ category: "kanji", type, item, id: `k-${item.id}-${type}` }))),
@@ -400,7 +399,6 @@ function hintValues({ spec, parts }) {
   else {
     const example = grammarExample(spec);
     if (spec.type === "pattern-meaning") values = { hira: example.hira, meaning: null };
-    else if (spec.type === "meaning-pattern") values = { hira: GRAMMAR_EXAMPLES[spec.item.id].sentence.questionHira, meaning: null };
     else values = { hira: example.questionHira, meaning: example.vi };
   }
   for (const kind of Object.keys(values)) {
