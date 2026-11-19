@@ -225,11 +225,18 @@ function updateProgress() {
   $("progressTotal").textContent = total;
   $("progressBar").setAttribute("aria-valuenow", String(done));
   $("progressBar").setAttribute("aria-valuemax", String(total));
-  const segments = $("progressTrack").children;
-  for (let i = 0; i < segments.length; i++) {
-    const fill = Math.min(1, Math.max(0, done / total * segments.length - i));
+  const segments = $("progressTrack").querySelectorAll(".progress-segment");
+  const n = segments.length;
+  const filled = total ? done / total * n : 0;
+  for (let i = 0; i < n; i++) {
+    const fill = Math.min(1, Math.max(0, filled - i));
     segments[i].firstElementChild.style.width = `${fill * 100}%`;
   }
+  // Vòng tròn số câu đã thuộc chạy theo điểm cuối phần đã tô (tính cả khoảng hở giữa các khúc).
+  const whole = Math.min(Math.floor(filled), n - 1);
+  const partial = filled - whole;
+  $("progressDone").style.left =
+    `calc(${whole} * (100% + var(--gap)) / ${n} + ${partial} * (100% - ${n - 1} * var(--gap)) / ${n})`;
   const where = state.extra ? "Ôn lại câu sai còn nợ"
     : `Phần ${state.part}/${state.part + Math.ceil(state.pool.length / chunkSize)}`;
   const status = state.main.length ? `còn ${state.main.length} câu`
