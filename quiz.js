@@ -198,7 +198,7 @@ function questionParts(spec) {
   return { text: grammarExample(spec).vi, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
 function freshRound(round) {
-  return { round, pool: shuffle(ITEM_KEYS), main: [], wrongs: [], retry: [], carry: [], mastered: new Set(), part: 0, extra: false };
+  return { round, pool: shuffle(ITEM_KEYS), main: [], wrongs: [], retry: [], carry: [], mastered: new Set(), part: 0, extra: false, partItems: [] };
 }
 // Chuẩn bị hàng đợi: hết lượt chính thì sang lượt sửa, hết phần thì mở phần mới, hết lượt thì xáo lại.
 function ensureQueue(lastKey) {
@@ -208,6 +208,7 @@ function ensureQueue(lastKey) {
     if (state.pool.length || state.carry.length) {
       const fresh = state.pool.splice(0, chunkSize);
       state.main = [...state.carry, ...fresh];
+      state.partItems = [...state.main];
       state.carry = [];
       state.extra = fresh.length === 0;
       if (fresh.length) state.part++;
@@ -225,18 +226,24 @@ function updateProgress() {
   $("progressTotal").textContent = total;
   $("progressBar").setAttribute("aria-valuenow", String(done));
   $("progressBar").setAttribute("aria-valuemax", String(total));
+  // Mỗi khúc là một phần; thanh hiện tối đa 6 khúc quanh phần đang học (giữ 2 phần đã xong phía trước).
   const segments = $("progressTrack").querySelectorAll(".progress-segment");
-  const n = segments.length;
-  const filled = total ? done / total * n : 0;
-  for (let i = 0; i < n; i++) {
-    const fill = Math.min(1, Math.max(0, filled - i));
+  const currentPart = Math.max(1, state.part + (state.extra ? 1 : 0));
+  const totalParts = currentPart + Math.ceil(state.pool.length / chunkSize);
+  const first = Math.max(1, Math.min(currentPart - 2, totalParts - segments.length + 1));
+  const n = Math.min(segments.length, totalParts - first + 1);
+  const items = state.partItems || [];
+  const partFill = items.length ? items.filter(key => state.mastered.has(key)).length / items.length : 0;
+  for (let i = 0; i < segments.length; i++) {
+    const part = first + i;
+    segments[i].hidden = i >= n;
+    segments[i].classList.toggle("fade", i === n - 1 && part < totalParts);
+    const fill = part < currentPart ? 1 : part === currentPart ? partFill : 0;
     segments[i].firstElementChild.style.width = `${fill * 100}%`;
   }
-  // Vòng tròn số câu đã thuộc chạy theo điểm cuối phần đã tô (tính cả khoảng hở giữa các khúc).
-  const whole = Math.min(Math.floor(filled), n - 1);
-  const partial = filled - whole;
+  // Vòng tròn số câu đã thuộc nằm ở điểm cuối phần đã tô (tính cả khoảng hở giữa các khúc).
   $("progressDone").style.left =
-    `calc(${whole} * (100% + var(--gap)) / ${n} + ${partial} * (100% - ${n - 1} * var(--gap)) / ${n})`;
+    `calc(${currentPart - first} * (100% + var(--gap)) / ${n} + ${partFill} * (100% - ${n - 1} * var(--gap)) / ${n})`;
   const where = state.extra ? "Ôn lại câu sai còn nợ"
     : `Phần ${state.part}/${state.part + Math.ceil(state.pool.length / chunkSize)}`;
   const status = state.main.length ? `còn ${state.main.length} câu`
@@ -273,6 +280,9 @@ function restoreProgress() {
       const mastered = new Set(keep(saved.mastered));
       state = { round: saved.round, mastered, main: keep(saved.main), retry: keep(saved.retry), wrongs: keep(saved.wrongs),
         carry: keep(saved.carry), pool: keep(saved.pool), part: Number(saved.part) || 0, extra: Boolean(saved.extra) };
+      // partItems có thể trùng với các danh sách trên nên lọc riêng, không qua keep().
+      state.partItems = Array.isArray(saved.partItems) ? saved.partItems.filter(key => ITEM_KEY_SET.has(key))
+        : [...state.main, ...state.wrongs, ...state.retry];
     } else {
       // Bản lưu cũ: mục đã trả lời được tính là đã thuộc, phần còn lại học theo phần.
       state = freshRound(saved.roundNumber);
