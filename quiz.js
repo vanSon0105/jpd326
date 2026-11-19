@@ -46,27 +46,22 @@ const CATEGORY_INFO = {
 const MODES = {
   all: {
     categories: ["kanji", "grammar", "vocab", "exam"], title: "Luyện đề tổng hợp · Bài 6–10", heading: ["Luyện đề", "tổng hợp."],
-    intro: "Kanji, ngữ pháp, từ vựng bài 6–10 và câu hỏi đề thi các kỳ trước được trộn trong từng lượt. Trả lời đủ mọi mục rồi lượt mới được xáo lại.",
     storageKey: "jpd326-quiz-coverage-v1"
   },
   vocab: {
     categories: ["vocab"], title: "Luyện từ vựng · Bài 6–10", heading: ["Luyện", "từ vựng."],
-    intro: `${VOCAB.length} từ vựng bài 6–10 (できる日本語 中級): nghĩa, cách đọc và ngược lại. Trả lời đủ mọi từ rồi lượt mới được xáo lại.`,
     storageKey: "jpd326-quiz-coverage-v1-vocab"
   },
   exam: {
     categories: ["exam"], title: "Luyện đề thi các kỳ trước", heading: ["Đề thi", "các kỳ trước."],
-    intro: `${EXAM.length} câu từ đề giữa kỳ và cuối kỳ JPD326 (SP2024, SU2024, SU2025), kể cả bài đọc hiểu. Đáp án và giải thích do người soạn tự làm, có thể có sai sót.`,
     storageKey: "jpd326-quiz-coverage-v1-exam"
   },
   kanji: {
     categories: ["kanji"], title: "Luyện Kanji · Bài 6–10", heading: ["Luyện", "Kanji."],
-    intro: `${WORDS.length} từ Kanji bài 6–10: Kanji ↔ cách đọc, có thể bật thêm Kanji ↔ nghĩa bên dưới. Trả lời đủ mọi từ rồi lượt mới được xáo lại.`,
     storageKey: "jpd326-quiz-coverage-v1-kanji"
   },
   grammar: {
     categories: ["grammar"], title: "Luyện ngữ pháp · Bài 6–10", heading: ["Luyện", "ngữ pháp."],
-    intro: `${GRAMMAR.length} cấu trúc ngữ pháp bài 6–10: điền câu, cách nối và ý nghĩa. Trả lời đủ mọi cấu trúc rồi lượt mới được xáo lại.`,
     storageKey: "jpd326-quiz-coverage-v1-grammar"
   }
 };
@@ -530,7 +525,6 @@ function applyMode() {
   document.title = MODE.title;
   $("quiz").setAttribute("aria-label", MODE.title);
   $("sidebarTitle").replaceChildren(MODE.heading[0], document.createElement("br"), MODE.heading[1]);
-  $("sidebarIntro").textContent = MODE.intro;
   $("kanjiMeaningRow").hidden = !MODE.categories.includes("kanji");
   $("kanjiMeaning").checked = kanjiMeaning;
   $("kanjiMeaning").onchange = event => {
