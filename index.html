@@ -3,107 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f6f4">
-  <title>Sổ Kanji · Luyện bài 6–10</title>
+  <meta name="theme-color" content="#f7f8f6">
+  <title>Luyện đề tổng hợp · Kanji &amp; Ngữ pháp</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="shell">
-    <aside class="sidebar" id="sidebar" aria-label="Điều hướng">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">字</span><span>Sổ Kanji</span></div>
-      <p class="sidebar-caption">Từ vựng trong slide · Bài 6–10</p>
-      <div class="nav-group">
-        <p class="nav-label">Học</p>
-        <button class="nav-item active" id="navPractice" type="button">Luyện tập <span id="navPracticeCount"></span></button>
-        <button class="nav-item" id="navLibrary" type="button">Kho từ vựng <span id="navLibraryCount"></span></button>
-        <a class="nav-item" href="bunpo.html">Luyện ngữ pháp <span>→</span></a>
-      </div>
-      <div class="nav-group">
-        <p class="nav-label">Bài học</p>
-        <div id="lessonNav" class="lesson-nav"></div>
-      </div>
-      <div class="sidebar-bottom">
-        <p>Tiến độ được lưu trong trình duyệt này.</p>
-        <button type="button" id="resetProgress" class="text-button">Xóa tiến độ</button>
-      </div>
-    </aside>
-
-    <div class="content-wrap">
-      <header class="mobile-bar">
-        <button id="menuButton" type="button" aria-label="Mở menu" aria-expanded="false"><span class="menu-lines" aria-hidden="true"></span></button>
-        <span>Sổ Kanji</span>
-        <button id="mobileLibrary" type="button">Kho từ</button>
-      </header>
-      <main class="sheet">
-        <div class="workspace" id="practiceView">
-          <header class="page-heading">
-            <div>
-              <h1>Học tiếp Kanji.</h1>
-              <p id="scopeText">Chọn cách luyện và trả lời từng từ một.</p>
-            </div>
-            <button class="quiet-button" id="shuffleButton" type="button">Đổi từ khác</button>
-          </header>
-
-          <section class="stats" aria-label="Tiến độ học">
-            <div><span>Trong slide</span><strong id="totalStat">0</strong></div>
-            <div><span>Đã làm</span><strong id="seenStat">0</strong></div>
-            <div><span>Đã nhớ</span><strong id="correctStat">0</strong></div>
-            <div><span>Cần ôn lại</span><strong id="wrongStat">0</strong></div>
-          </section>
-
-          <div class="work-grid">
-            <section class="quiz-panel" aria-label="Câu hỏi">
-              <div class="quiz-toolbar">
-                <label for="modeSelect">Kiểu câu hỏi</label>
-                <select id="modeSelect">
-                  <option value="kanji-hira">Kanji → Hiragana · 4 đáp án</option>
-                  <option value="hira-kanji">Hiragana → Kanji · 4 đáp án</option>
-                  <option value="kanji-meaning">Kanji → Nghĩa · 4 đáp án</option>
-                  <option value="meaning-kanji">Nghĩa → Kanji · 4 đáp án</option>
-                  <option value="typing">Kanji → Gõ Hiragana</option>
-                </select>
-              </div>
-              <div class="question-meta"><span id="questionLesson">Bài 6</span><span id="questionNumber"></span></div>
-              <p class="prompt" id="questionPrompt">Chọn cách đọc đúng</p>
-              <div class="question-word" id="questionWord" lang="ja">—</div>
-              <div id="answerArea"></div>
-              <div class="feedback" id="feedback" role="status" aria-live="polite" hidden></div>
-              <div class="quiz-footer"><button id="nextButton" class="primary-button" type="button" hidden>Từ tiếp theo <span aria-hidden="true">→</span></button><span id="shortcutHint">Phím 1–4 để chọn đáp án</span></div>
-            </section>
-
-            <aside class="study-rail" aria-label="Ôn tập">
-              <div class="rail-block">
-                <div class="rail-title"><h2>Phạm vi ôn</h2><button id="reviewToggle" type="button" aria-pressed="false">Từ sai</button></div>
-                <p id="reviewDescription">Luyện toàn bộ từ của bài đã chọn.</p>
-              </div>
-              <div class="rail-block">
-                <div class="rail-title"><h2>Ghi nhớ</h2></div>
-                <p>Chọn sai vẫn thấy cả cách đọc và nghĩa. Những từ sai sẽ nằm trong mục “Từ sai” để luyện lại.</p>
-              </div>
-              <div class="rail-block rail-progress">
-                <div class="rail-title"><h2>Đã gặp trong phạm vi</h2><span id="coverageText">0 / 0</span></div>
-                <div class="progress-track"><div id="progressFill"></div></div>
-              </div>
-            </aside>
-          </div>
-        </div>
-
-        <div class="workspace library-view" id="libraryView" hidden>
-          <header class="page-heading"><div><h1>Kho từ vựng.</h1><p>Tra lại kanji, hiragana và nghĩa tiếng Việt từ các slide.</p></div></header>
-          <div class="library-tools">
-            <label for="searchInput" class="sr-only">Tìm từ</label>
-            <input id="searchInput" type="search" placeholder="Tìm kanji, hiragana hoặc nghĩa…" autocomplete="off">
-            <span id="resultCount"></span>
-          </div>
-          <div class="word-list" id="wordList"></div>
-        </div>
-      </main>
+  <button class="menu-button" id="menuButton" type="button" aria-label="Mở thanh bên" aria-controls="sidebar" aria-expanded="false">
+    <span class="menu-lines" aria-hidden="true"></span>
+  </button>
+  <div class="backdrop" id="backdrop" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="Thông tin bộ đề" aria-hidden="true">
+    <div class="sidebar-top">
+      <span class="mark" aria-hidden="true">文</span>
+      <button id="closeSidebar" type="button" aria-label="Đóng thanh bên">×</button>
     </div>
-  </div>
+    <h2>Luyện đề<br>tổng hợp.</h2>
+    <p>Kanji và ngữ pháp bài 6–10 được trộn ngẫu nhiên, không chia bài hay kiểu câu hỏi.</p>
+    <div class="sidebar-facts">
+      <div><span>Kanji</span><strong id="wordCount">283 từ</strong></div>
+      <div><span>Ngữ pháp</span><strong id="grammarCount">68 cấu trúc</strong></div>
+    </div>
+    <p class="sidebar-hint">Phím 1–4 để chọn đáp án. Sau khi xem kết quả, bấm đáp án bất kỳ hoặc Enter để sang câu tiếp theo.</p>
+  </aside>
+
+  <main class="quiz" aria-label="Đề kiểm tra tổng hợp">
+    <h1 class="question-prompt" id="questionPrompt"></h1>
+    <p class="question-text" id="questionText"></p>
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="feedback" role="status" aria-live="polite" hidden></div>
+  </main>
+
   <script src="data.js"></script>
-  <script src="app.js"></script>
+  <script src="grammar-data.js"></script>
+  <script src="quiz.js"></script>
 </body>
 </html>
