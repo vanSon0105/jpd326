@@ -138,6 +138,11 @@ function pickOptions(pool, item, field, extraEligible = () => true) {
   }
   return shuffle(values);
 }
+// Tìm từ ứng với từng đáp án (ưu tiên cùng bài) để giải thích cả các đáp án sai.
+function optionSources(pool, item, options, field) {
+  return options.map(value => field(item) === value ? item
+    : pool.find(other => other.lesson === item.lesson && field(other) === value) || pool.find(other => field(other) === value) || null);
+}
 function vocabField(item, type) {
   if (type === "vocab-meaning") return item.meaning;
   if (type === "vocab-reading") return item.reading;
@@ -186,11 +191,15 @@ function questionParts(spec) {
   const { category, type, item, variant = 0 } = spec;
   if (category === "kanji") {
     const text = type === "hira-kanji" ? item.hira : type === "meaning-kanji" ? item.meaning : item.kanji;
-    return { text, answer: wordField(item, type), options: wordOptions(item, type), viQuestion: type === "meaning-kanji", viOptions: type === "kanji-meaning" };
+    const options = wordOptions(item, type);
+    return { text, answer: wordField(item, type), options, optionItems: optionSources(WORDS, item, options, other => wordField(other, type)),
+      viQuestion: type === "meaning-kanji", viOptions: type === "kanji-meaning" };
   }
   if (category === "vocab") {
     const text = type === "meaning-vocab" ? item.meaning : item.word;
-    return { text, answer: vocabField(item, type), options: vocabOptions(item, type), viQuestion: type === "meaning-vocab", viOptions: type === "vocab-meaning" };
+    const options = vocabOptions(item, type);
+    return { text, answer: vocabField(item, type), options, optionItems: optionSources(VOCAB, item, options, other => vocabField(other, type)),
+      viQuestion: type === "meaning-vocab", viOptions: type === "vocab-meaning" };
   }
   if (category === "exam") {
     const marker = item.question.split("（　）").length === 2 ? "（　）" : undefined;
@@ -520,8 +529,18 @@ function showResult(entry) {
   feedback.append(title);
   const item = spec.item;
   let lines;
-  if (spec.category === "kanji") lines = [[`${item.kanji} · ${item.hira} — ${item.meaning}`, "jp"]];
-  else if (spec.category === "vocab") lines = [[`${item.word} · ${item.reading} — ${item.meaning}`, "jp"], [`Từ vựng bài ${item.lesson}`]];
+  if (["kanji", "vocab"].includes(spec.category)) {
+    // Liệt kê cả 4 đáp án theo thứ tự nút: chữ · cách đọc — nghĩa, đánh dấu đáp án đúng và đáp án đã chọn.
+    const describe = word => spec.category === "kanji" ? `${word.kanji} · ${word.hira} — ${word.meaning}`
+      : `${word.word}${word.reading !== word.word ? ` · ${word.reading}` : ""} — ${word.meaning}${word.lesson !== item.lesson ? ` (bài ${word.lesson})` : ""}`;
+    lines = parts.options.map((value, index) => {
+      const word = parts.optionItems?.[index];
+      const isAnswer = value === parts.answer;
+      const mark = isAnswer ? " ✓" : value === chosen ? " ✗" : "";
+      return [`${index + 1}. ${word ? describe(word) : display(value)}${mark}`, `jp option${isAnswer ? " right" : value === chosen ? " wrong" : ""}`];
+    });
+    if (spec.category === "vocab") lines.push([`Từ vựng bài ${item.lesson}`]);
+  }
   else if (spec.category === "exam") {
     lines = [[`Giải thích: ${item.explain}`]];
     if (item.vi) lines.push([`Dịch đề: ${item.vi}`]);
@@ -536,7 +555,7 @@ function showResult(entry) {
   }
   for (const [line, extra] of lines) {
     const detail = document.createElement("span"); detail.className = "detail" + (extra ? ` ${extra}` : "");
-    if (extra === "jp") detail.lang = "ja";
+    if (extra?.split(" ").includes("jp")) detail.lang = "ja";
     detail.textContent = line; feedback.append(detail);
   }
   const hint = document.createElement("span"); hint.className = "next-hint"; hint.textContent = "← xem câu trước · → hoặc Enter sang câu tiếp."; feedback.append(hint);

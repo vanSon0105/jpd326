@@ -160,7 +160,7 @@ const VOCAB_RAW = {
 掛け声|かけごえ|tiếng hò hét (trong trận đấu)
 瞬間|しゅんかん|khoảnh khắc
 ハイタッチ（する）|ハイタッチ（する）|high touch (đập tay nhau để ăn mừng một thành công)
-意外（な）|いがい（な）|ngoài sức tưởng tưởng
+意外（な）|いがい（な）|ngoài sức tưởng tượng; bất ngờ
 出会い|であい|sự gặp gỡ; hội ngộ
 出店（する）|しゅってん（する）|mở cửa hàng
 中古品|ちゅうこひん|hàng cũ; secondhand
