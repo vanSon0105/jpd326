@@ -373,14 +373,13 @@ function drawSpec(lastKey) {
   saveProgress();
   return { spec, key, phase };
 }
-// Xử lý câu trả lời (hoặc bỏ qua) của câu đang hỏi trong hàng đợi.
+// Xử lý câu trả lời của câu đang hỏi trong hàng đợi.
 function settle(entry, correct) {
   const queue = entry.phase === "main" ? state.main : state.retry;
   const index = queue.indexOf(entry.key);
   if (index < 0) return;
   queue.splice(index, 1);
-  if (correct === null) queue.push(entry.key);
-  else if (correct) state.mastered.add(entry.key);
+  if (correct) state.mastered.add(entry.key);
   else if (entry.phase === "main") state.wrongs.push(entry.key);
   else state.carry.push(entry.key);
 }
@@ -485,14 +484,19 @@ function renderQuestion(entry) {
     root.append(button);
   }
   $("previousButton").disabled = historyIndex === 0;
+  updateNextButton();
   if (entry.chosen !== null) showResult(entry);
 }
+// Câu mới nhất phải trả lời xong mới sang câu tiếp được.
+function mustAnswerFirst() {
+  return historyIndex === history.length - 1 && history[historyIndex]?.chosen === null;
+}
+function updateNextButton() { $("nextButton").disabled = mustAnswerFirst(); }
 function nextQuestion() {
   if (historyIndex < history.length - 1) historyIndex++;
   else {
+    if (mustAnswerFirst()) return;
     const last = history[history.length - 1];
-    // Bỏ qua câu đang hỏi: đẩy xuống cuối hàng đợi hiện tại.
-    if (last?.live && last.chosen === null) settle(last, null);
     if (last) last.live = false;
     const { spec, key, phase } = drawSpec(last?.key);
     history.push({ spec, key, phase, live: true, parts: questionParts(spec), chosen: null, hiraShown: false, meaningShown: false });
@@ -514,7 +518,20 @@ function grade(chosen) {
     updateProgress();
     saveProgress();
   }
+  updateNextButton();
   showResult(current);
+}
+// Học lại từ đầu: xoá tiến độ đã lưu của mục được chọn ("every" = tất cả các mục).
+const RESET_LABELS = { all: "Tổng hợp", kanji: "Kanji", grammar: "Ngữ pháp", vocab: "Từ vựng", exam: "Đề thi", every: "Tất cả các mục" };
+function resetProgress() {
+  const target = $("resetTarget").value;
+  const modes = target === "every" ? Object.keys(MODES) : [target];
+  if (!modes.every(mode => MODES[mode])) return;
+  if (!confirm(`Xoá toàn bộ tiến độ của "${RESET_LABELS[target]}" và học lại từ đầu?`)) return;
+  try { for (const mode of modes) localStorage.removeItem(MODES[mode].storageKey); } catch { /* Không xoá được thì thôi. */ }
+  if (modes.includes(MODE_NAME)) { location.reload(); return; }
+  $("resetNote").textContent = `Đã đặt lại "${RESET_LABELS[target]}".`;
+  $("resetNote").hidden = false;
 }
 function showResult(entry) {
   const { spec, parts, chosen } = entry;
@@ -630,6 +647,13 @@ function applyMode() {
     kanjiMeaning = event.target.checked;
     try { localStorage.setItem(KANJI_MEANING_KEY, kanjiMeaning ? "1" : "0"); } catch { /* Chỉ áp dụng trong phiên này. */ }
   };
+  for (const [value, label] of Object.entries(RESET_LABELS)) {
+    const option = document.createElement("option"); option.value = value; option.textContent = label;
+    $("resetTarget").append(option);
+  }
+  $("resetTarget").value = MODE_NAME;
+  $("resetTarget").onchange = () => { $("resetNote").hidden = true; };
+  $("resetButton").onclick = resetProgress;
   $("chunkSize").value = String(chunkSize);
   $("chunkSize").onchange = event => {
     const size = Number(event.target.value);
