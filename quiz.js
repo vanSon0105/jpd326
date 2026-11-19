@@ -85,11 +85,13 @@ for (const spec of MODE.categories.flatMap(category => QUESTIONS[category])) {
 const ITEM_KEYS = [...QUESTION_GROUPS.keys()];
 const ITEM_KEY_SET = new Set(ITEM_KEYS);
 const STORAGE_KEY = MODE.storageKey;
-let roundNumber = 1;
-let completed = new Set();
-let itemDeck = [];
+const CHUNK_SIZES = [6, 10, 20];
+const CHUNK_SIZE_KEY = "jpd326-chunk-size";
+let chunkSize = 6;
+// Học theo phần: mỗi phần hỏi lượt chính (main), câu sai được hỏi lại ở cuối phần (retry);
+// sai tiếp thì chuyển sang đầu phần sau (carry). Hết câu mới thì câu nợ được hỏi lại tới khi đúng.
+let state = freshRound(1);
 let variantDecks = {};
-let pendingKey = null;
 let current = null;
 const history = [];
 let historyIndex = -1;
@@ -187,10 +189,49 @@ function questionParts(spec) {
   if (type === "pattern-meaning") return { text: grammarExample(spec).full, answer: item.meaning, options: grammarOptions(item, type, variant), viOptions: true };
   return { text: grammarExample(spec).vi, answer: item.pattern, options: grammarOptions(item, type, variant), viQuestion: true };
 }
+function freshRound(round) {
+  return { round, pool: shuffle(ITEM_KEYS), main: [], wrongs: [], retry: [], carry: [], mastered: new Set(), part: 0, extra: false };
+}
+// Chuẩn bị hàng đợi: hết lượt chính thì sang lượt sửa, hết phần thì mở phần mới, hết lượt thì xáo lại.
+function ensureQueue(lastKey) {
+  for (let guard = 0; guard < 5; guard++) {
+    if (state.main.length || state.retry.length) return;
+    if (state.wrongs.length) { state.retry = state.wrongs; state.wrongs = []; continue; }
+    if (state.pool.length || state.carry.length) {
+      const fresh = state.pool.splice(0, chunkSize);
+      state.main = [...state.carry, ...fresh];
+      state.carry = [];
+      state.extra = fresh.length === 0;
+      if (fresh.length) state.part++;
+      continue;
+    }
+    state = freshRound(state.round + 1);
+    if (lastKey && state.pool[0] === lastKey && state.pool.length > 1) [state.pool[0], state.pool[1]] = [state.pool[1], state.pool[0]];
+  }
+}
+function activePhase() { return state.main.length ? "main" : "retry"; }
 function updateProgress() {
+  const total = ITEM_KEYS.length;
+  const done = state.mastered.size;
+  $("progressDone").textContent = done;
+  $("progressTotal").textContent = total;
+  $("progressBar").setAttribute("aria-valuenow", String(done));
+  $("progressBar").setAttribute("aria-valuemax", String(total));
+  const segments = $("progressTrack").children;
+  for (let i = 0; i < segments.length; i++) {
+    const fill = Math.min(1, Math.max(0, done / total * segments.length - i));
+    segments[i].firstElementChild.style.width = `${fill * 100}%`;
+  }
+  const where = state.extra ? "Ôn lại câu sai còn nợ"
+    : `Phần ${state.part}/${state.part + Math.ceil(state.pool.length / chunkSize)}`;
+  const status = state.main.length ? `còn ${state.main.length} câu`
+    : state.retry.length || state.wrongs.length ? `hỏi lại ${state.retry.length + state.wrongs.length} câu sai`
+      : "xong phần này";
+  const carried = state.carry.length ? ` · ${state.carry.length} câu chuyển sang phần sau` : "";
+  $("progressNote").textContent = `${where} · ${status}${carried}`;
   const counts = Object.fromEntries(MODE.categories.map(category => [category, 0]));
-  for (const key of completed) counts[key.split(":")[0]]++;
-  $("roundCount").textContent = roundNumber;
+  for (const key of state.mastered) counts[key.split(":")[0]]++;
+  $("roundCount").textContent = state.round;
   for (const category of MODE.categories) {
     const info = CATEGORY_INFO[category];
     $(`count-${category}`).textContent = `${counts[category]}/${info.total} ${info.unit}`;
@@ -198,46 +239,59 @@ function updateProgress() {
 }
 function saveProgress() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ roundNumber, completed: [...completed], itemDeck, variantDecks, pendingKey }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, ...state, mastered: [...state.mastered], variantDecks }));
   } catch { /* Trang vẫn dùng được khi trình duyệt chặn lưu trữ. */ }
 }
-// Mục mới thêm vào ngân hàng câu hỏi được nối vào lượt đang làm, không xoá tiến trình cũ.
+// Khôi phục tiến trình; mục mới thêm vào ngân hàng câu hỏi được nối vào cuối lượt đang làm.
 function restoreProgress() {
   try {
+    const stored = Number(localStorage.getItem(CHUNK_SIZE_KEY));
+    if (CHUNK_SIZES.includes(stored)) chunkSize = stored;
+  } catch { /* Dùng kích thước mặc định. */ }
+  try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved || !Number.isSafeInteger(saved.roundNumber) || saved.roundNumber < 1) return;
-    roundNumber = saved.roundNumber;
-    completed = new Set((saved.completed || []).filter(key => ITEM_KEY_SET.has(key)));
-    itemDeck = [...new Set((saved.itemDeck || []).filter(key => ITEM_KEY_SET.has(key) && !completed.has(key)))];
-    if (ITEM_KEY_SET.has(saved.pendingKey) && !completed.has(saved.pendingKey)) {
-      itemDeck = [saved.pendingKey, ...itemDeck.filter(key => key !== saved.pendingKey)];
+    if (!saved || !Number.isSafeInteger(saved.roundNumber ?? saved.round) || (saved.roundNumber ?? saved.round) < 1) return;
+    const seen = new Set();
+    const keep = list => (Array.isArray(list) ? list : []).filter(key => ITEM_KEY_SET.has(key) && !seen.has(key) && seen.add(key));
+    if (saved.version === 2) {
+      const mastered = new Set(keep(saved.mastered));
+      state = { round: saved.round, mastered, main: keep(saved.main), retry: keep(saved.retry), wrongs: keep(saved.wrongs),
+        carry: keep(saved.carry), pool: keep(saved.pool), part: Number(saved.part) || 0, extra: Boolean(saved.extra) };
+    } else {
+      // Bản lưu cũ: mục đã trả lời được tính là đã thuộc, phần còn lại học theo phần.
+      state = freshRound(saved.roundNumber);
+      state.mastered = new Set(keep(saved.completed));
+      state.pool = [];
     }
-    itemDeck.push(...shuffle(ITEM_KEYS.filter(key => !completed.has(key) && !itemDeck.includes(key))));
+    state.pool.push(...shuffle(ITEM_KEYS.filter(key => !seen.has(key))));
     variantDecks = {};
     for (const [key, ids] of Object.entries(saved.variantDecks || {})) {
       if (ITEM_KEY_SET.has(key) && Array.isArray(ids)) {
         variantDecks[key] = [...new Set(ids.filter(id => QUESTION_GROUPS.get(key).includes(id)))];
       }
     }
-  } catch { /* Bỏ qua dữ liệu lưu không hợp lệ. */ }
+  } catch { state = freshRound(1); }
 }
-function drawSpec() {
-  if (completed.size === ITEM_KEYS.length) {
-    roundNumber++;
-    completed.clear();
-    itemDeck = shuffle(ITEM_KEYS);
-    if (current && itemDeck[0] === itemKey(current.spec)) [itemDeck[0], itemDeck[1]] = [itemDeck[1], itemDeck[0]];
-  }
-  if (!itemDeck.length) itemDeck = shuffle(ITEM_KEYS.filter(key => !completed.has(key)));
-  while (completed.has(itemDeck[0])) itemDeck.shift();
-  if (!itemDeck.length) itemDeck = shuffle(ITEM_KEYS.filter(key => !completed.has(key)));
-  const key = itemDeck.shift();
+function drawSpec(lastKey) {
+  ensureQueue(lastKey);
+  const phase = activePhase();
+  const key = (phase === "main" ? state.main : state.retry)[0];
   if (!variantDecks[key]?.length) variantDecks[key] = shuffle(QUESTION_GROUPS.get(key));
   const spec = QUESTION_BY_ID.get(variantDecks[key].shift());
-  pendingKey = key;
   updateProgress();
   saveProgress();
-  return spec;
+  return { spec, key, phase };
+}
+// Xử lý câu trả lời (hoặc bỏ qua) của câu đang hỏi trong hàng đợi.
+function settle(entry, correct) {
+  const queue = entry.phase === "main" ? state.main : state.retry;
+  const index = queue.indexOf(entry.key);
+  if (index < 0) return;
+  queue.splice(index, 1);
+  if (correct === null) queue.push(entry.key);
+  else if (correct) state.mastered.add(entry.key);
+  else if (entry.phase === "main") state.wrongs.push(entry.key);
+  else state.carry.push(entry.key);
 }
 function renderQuestionText(text, marker, viQuestion, sentenceStyle) {
   const root = $("questionText"); root.replaceChildren();
@@ -312,13 +366,12 @@ function renderQuestion(entry) {
 function nextQuestion() {
   if (historyIndex < history.length - 1) historyIndex++;
   else {
-    if (current && current.chosen === null && current.round === roundNumber) {
-      const key = itemKey(current.spec);
-      if (!completed.has(key) && !itemDeck.includes(key)) itemDeck.push(key);
-      if (pendingKey === key) pendingKey = null;
-    }
-    const spec = drawSpec();
-    history.push({ spec, parts: questionParts(spec), round: roundNumber, chosen: null, hiraShown: false, meaningShown: false });
+    const last = history[history.length - 1];
+    // Bỏ qua câu đang hỏi: đẩy xuống cuối hàng đợi hiện tại.
+    if (last?.live && last.chosen === null) settle(last, null);
+    if (last) last.live = false;
+    const { spec, key, phase } = drawSpec(last?.key);
+    history.push({ spec, key, phase, live: true, parts: questionParts(spec), chosen: null, hiraShown: false, meaningShown: false });
     historyIndex++;
   }
   renderQuestion(history[historyIndex]);
@@ -331,11 +384,9 @@ function previousQuestion() {
 function grade(chosen) {
   if (!current || current.chosen !== null) return;
   current.chosen = chosen;
-  if (current.round === roundNumber) {
-    const key = itemKey(current.spec);
-    completed.add(key);
-    itemDeck = itemDeck.filter(item => item !== key);
-    if (pendingKey === key) pendingKey = null;
+  // Chỉ câu mới nhất được tính vào tiến độ; trả lời câu cũ trong lịch sử chỉ để ôn.
+  if (current.live) {
+    settle(current, chosen === current.parts.answer);
     updateProgress();
     saveProgress();
   }
@@ -414,6 +465,19 @@ function applyMode() {
   $("quiz").setAttribute("aria-label", MODE.title);
   $("sidebarTitle").replaceChildren(MODE.heading[0], document.createElement("br"), MODE.heading[1]);
   $("sidebarIntro").textContent = MODE.intro;
+  for (let i = 0; i < 6; i++) {
+    const segment = document.createElement("span"); segment.className = "progress-segment";
+    segment.append(document.createElement("span"));
+    $("progressTrack").append(segment);
+  }
+  $("chunkSize").value = String(chunkSize);
+  $("chunkSize").onchange = event => {
+    const size = Number(event.target.value);
+    if (!CHUNK_SIZES.includes(size)) return;
+    chunkSize = size;
+    try { localStorage.setItem(CHUNK_SIZE_KEY, String(size)); } catch { /* Chỉ áp dụng trong phiên này. */ }
+    updateProgress();
+  };
   for (const category of MODE.categories) {
     const row = document.createElement("div");
     const label = document.createElement("span"); label.textContent = CATEGORY_INFO[category].label;
@@ -428,8 +492,7 @@ function applyMode() {
     } else link.removeAttribute("aria-current");
   }
 }
-applyMode();
 restoreProgress();
-updateProgress();
+applyMode();
 $("sidebar").inert = true;
 nextQuestion();
