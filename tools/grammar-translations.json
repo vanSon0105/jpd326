@@ -1,0 +1,302 @@
+{
+  "base": {
+    "6-0": "Ngôi nhà đó được bao quanh bởi rừng.",
+    "6-1": "Ở trường này, du học sinh chiếm 30% tổng số học sinh.",
+    "6-2": "Gần đây bận quá nên tôi thường bỏ bữa sáng.",
+    "6-3": "So với năm ngoái, năm nay mưa nhiều hơn.",
+    "6-4": "Tôi đã mua sẵn nước để chuẩn bị cho bão.",
+    "6-5": "Số người dùng ví điện tử thay cho tiền mặt đã tăng lên.",
+    "6-6": "Tôi muốn thử sống ở một thành phố cổ như Kyoto.",
+    "6-7": "Cô ấy tham gia cuộc họp với tư cách phiên dịch viên.",
+    "6-8": "Vào những ngày mệt mỏi, tốt nhất là đi ngủ sớm.",
+    "6-9": "Các cửa hàng nằm san sát quanh nhà ga.",
+    "6-10": "Kyoto có nhiều địa danh nổi tiếng, tiêu biểu là chùa Kiyomizu.",
+    "6-11": "Suốt cả năm, thị trấn này đông khách du lịch.",
+    "6-12": "Vì tìm thấy hóa thạch biển, người ta cho rằng nơi này xưa kia là biển.",
+    "6-13": "Nhắc đến Hokkaido, tôi nghĩ ngay đến tuyết.",
+    "7-0": "Vì ngày mai thi nên chẳng có tâm trí đâu mà đi chơi.",
+    "7-1": "Sau khi thử uống loại thuốc mới, tôi đã ngủ ngon.",
+    "7-2": "Đã có quyết định rằng từ tháng sau tôi sẽ làm việc ở Osaka.",
+    "7-3": "Chừng nào còn sống ở Nhật, tôi còn có nhiều cơ hội dùng tiếng Nhật.",
+    "7-4": "Nếu có thời gian, tôi gọi điện vì nghĩ không biết bạn có muốn đi cùng không.",
+    "7-5": "Dù mới làm lần đầu, món này rất ngon.",
+    "7-6": "Cứ hai vé, chúng tôi tặng một đồ uống.",
+    "7-7": "Trẻ con lớn nhanh thật đấy.",
+    "7-8": "Dù biết thức khuya có hại cho sức khỏe, tôi vẫn cứ thức khuya.",
+    "7-9": "Mỗi khi nghe bài hát này, tôi lại nhớ về thời thơ ấu.",
+    "7-10": "Tôi bận đến mức ngay cả thời gian ăn trưa cũng không có.",
+    "7-11": "Trái với dự đoán, bài thi khá dễ.",
+    "7-12": "Trong lúc đọc sách, tôi đã ngủ thiếp đi lúc nào không hay.",
+    "7-13": "Khách sạn này sang trọng ngay từ lối vào.",
+    "8-0": "Thưa quản lý, về lịch làm việc tuần sau, tôi có thể trao đổi một chút được không ạ?",
+    "8-1": "Vì tôi không khỏe, tôi có thể xin phép về trước được không ạ?",
+    "8-2": "Nhờ thầy cô dạy bảo mà tôi đã thi đỗ.",
+    "8-3": "Vì tàu dừng chạy nên tôi đã đến muộn.",
+    "8-4": "Trưởng phòng đã thay mặt trưởng bộ phận tham dự cuộc họp.",
+    "8-5": "Bản thân chẳng làm gì mà cứ toàn phàn nàn.",
+    "8-6": "Vì mưa lớn nên trận đấu đã bị hủy.",
+    "8-7": "Nếu cố quá như thế, chắc chắn bạn sẽ làm hỏng sức khỏe.",
+    "8-8": "Tin đó đã khiến cả gia đình vui mừng.",
+    "8-9": "Vẫn còn thời gian nên không cần vội.",
+    "8-10": "Hễ nói đến chuyện nấu ăn là mẹ tôi nói mãi không dừng.",
+    "8-11": "Ở vị trí của cha mẹ, con về muộn thì sẽ lo lắng.",
+    "8-12": "Mỗi lần nhìn bức ảnh này, tôi lại nhớ chuyến du lịch.",
+    "8-13": "Giá mà xuất phát sớm thì đã kịp tàu.",
+    "9-0": "Những kỷ niệm với bạn bè thật khó quên.",
+    "9-1": "Hãy thử làm như thầy cô đã giải thích.",
+    "9-2": "Theo thời gian, nỗi bất an cũng dần tan biến.",
+    "9-3": "Bộ phim này được làm dựa trên một câu chuyện có thật.",
+    "9-4": "Ngày mai tập trung lúc tám giờ, đúng không?",
+    "9-5": "Ơ, cuộc họp bắt đầu từ mấy giờ ấy nhỉ?",
+    "9-6": "Hôm nay là ngày hội à. Thảo nào đông người.",
+    "9-7": "Tôi không thể nào một mình bê chiếc hộp nặng này.",
+    "9-8": "Sao bạn không đi? Vì tớ sợ mà.",
+    "9-9": "Con đường đóng băng đến mức tôi suýt ngã.",
+    "9-10": "Tôi đã suýt lỡ chuyến tàu.",
+    "9-11": "Tôi nhớ gia đình đến không chịu nổi.",
+    "9-12": "Không phải tôi ghét rau, nhưng tôi không ăn hằng ngày.",
+    "9-13": "Chắc vẫn có thời gian đọc một email chứ.",
+    "10-0": "Cảnh đẹp nhìn từ trên núi thật khó quên.",
+    "10-1": "Cuốn sách này dày quá, tôi không thể nào đọc hết trong một ngày.",
+    "10-2": "Công viên này không chỉ trẻ em mà cả người lớn cũng có thể vui chơi.",
+    "10-3": "Vậy thì xin cho phép tôi hướng dẫn quý vị.",
+    "10-4": "Lát nữa chúng tôi sẽ liên lạc lại với quý vị.",
+    "10-5": "Tôi cứ tưởng đã bỏ ví vào túi, nhưng không tìm thấy ví đâu.",
+    "10-6": "Tôi nghĩ con số này có vẻ hơi sai.",
+    "10-7": "Hiện tại đoàn tàu đang tạm ngừng vận hành.",
+    "10-8": "Rất xin lỗi, nhưng chúng tôi không thể thay đổi được.",
+    "10-9": "Thật ngạc nhiên là tôi đã gặp một người bạn cũ ở nhà ga.",
+    "10-10": "Đúng là anh ấy đã sống ở Nhật mười năm, tiếng Nhật của anh ấy rất giỏi.",
+    "10-11": "Tiện thể đi siêu thị, mua giúp tôi ít sữa nhé."
+  },
+  "connection": {
+    "6-1": {
+      "sentence": "この学校では留学生が全体の三割［　］占めている。"
+    },
+    "6-2": {
+      "sentence": "最近、約束を忘れ［　］だ。",
+      "vi": "Gần đây tôi hay quên các cuộc hẹn."
+    },
+    "6-6": {
+      "sentence": "京都［　］ような古い町に住んでみたい。"
+    },
+    "6-7": {
+      "sentence": "彼女は通訳［　］会議に参加した。"
+    },
+    "6-12": {
+      "sentence": "静か［　］ことから、この町は観光地として人気がある。",
+      "vi": "Vì yên tĩnh nên thị trấn này được yêu thích như một điểm du lịch."
+    },
+    "7-1": {
+      "sentence": "新しい薬を飲んでみ［　］ところ、よく眠れた。"
+    },
+    "7-3": {
+      "sentence": "学生［　］限り、学割が使える。",
+      "vi": "Chừng nào còn là sinh viên thì có thể dùng ưu đãi sinh viên."
+    },
+    "7-5": {
+      "sentence": "新人［　］しては、仕事が速い。",
+      "vi": "Dù là người mới, bạn làm việc nhanh."
+    },
+    "7-6": {
+      "sentence": "一人［　］100円いただきます。",
+      "vi": "Chúng tôi thu 100 yên mỗi người."
+    },
+    "7-7": {
+      "sentence": "夜の図書館は静か［　］ものだ。",
+      "vi": "Thư viện ban đêm thường yên tĩnh."
+    },
+    "7-8": {
+      "sentence": "体に悪いと知り［　］も、夜更かししてしまう。"
+    },
+    "7-9": {
+      "sentence": "この歌を聞く［　］、子どものころを思い出す。"
+    },
+    "7-10": {
+      "sentence": "子どもで［　］できる簡単なゲームです。",
+      "vi": "Đây là trò chơi đơn giản đến cả trẻ con cũng chơi được."
+    },
+    "7-12": {
+      "sentence": "本を読んでいる［　］、いつの間にか眠った。"
+    },
+    "8-1": {
+      "sentence": "体調が悪いので、先に帰ら［　］いただけませんか。"
+    },
+    "8-2": {
+      "sentence": "先生［　］おかげで、合格できた。",
+      "vi": "Nhờ thầy cô mà tôi đã thi đỗ."
+    },
+    "8-3": {
+      "sentence": "心配［　］ものですから、電話しました。",
+      "vi": "Vì tôi lo lắng nên đã gọi điện."
+    },
+    "8-5": {
+      "sentence": "子ども［　］くせに、大人のようなことを言う。",
+      "vi": "Dù chỉ là trẻ con mà lại nói như người lớn."
+    },
+    "8-6": {
+      "sentence": "忙しい［　］せいで、昼ご飯を食べる時間がなかった。",
+      "vi": "Vì bận nên tôi không có thời gian ăn trưa."
+    },
+    "8-7": {
+      "sentence": "制服を着ているから、あの人は学生［　］にきまっている。",
+      "vi": "Người đó mặc đồng phục nên chắc chắn là sinh viên."
+    },
+    "8-8": {
+      "sentence": "良い知らせは家族を喜ば［　］。",
+      "vi": "Tin tốt khiến gia đình vui mừng."
+    },
+    "8-12": {
+      "sentence": "旅行［　］たびに、新しい友達ができる。",
+      "vi": "Mỗi chuyến du lịch, tôi lại có thêm bạn mới."
+    },
+    "8-13": {
+      "sentence": "早く出発［　］、電車に間に合ったのに。"
+    },
+    "9-0": {
+      "sentence": "友達との思い出は忘れ［　］。"
+    },
+    "9-1": {
+      "sentence": "先生［　］ように、やってみてください。",
+      "vi": "Hãy thử làm theo cách của thầy cô."
+    },
+    "9-2": {
+      "sentence": "家族［　］ともに歩んでいきたい。",
+      "vi": "Tôi muốn cùng gia đình bước tiếp."
+    },
+    "9-4": {
+      "sentence": "あの人は制服を着ているから、学生［　］でしょう？",
+      "vi": "Người đó mặc đồng phục nên chắc là sinh viên, đúng không?"
+    },
+    "9-5": {
+      "sentence": "あれ、彼はまだ学生［　］っけ？",
+      "vi": "Ơ, cậu ấy vẫn còn là sinh viên ấy nhỉ?"
+    },
+    "9-6": {
+      "sentence": "彼はまだ学生［　］というわけだ。",
+      "vi": "Vậy ra cậu ấy vẫn còn là sinh viên."
+    },
+    "9-7": {
+      "sentence": "そんなに遠い所へは一日で行き［　］。",
+      "vi": "Không đời nào đi tới nơi xa như vậy trong một ngày."
+    },
+    "9-8": {
+      "sentence": "どうしてそんなに安いの？ 学生［　］んだもん。",
+      "vi": "Sao rẻ thế? Vì tớ là sinh viên mà."
+    },
+    "9-9": {
+      "sentence": "合格の知らせを聞いて、驚く［　］うれしい。",
+      "vi": "Nghe tin đỗ, tôi vui đến kinh ngạc."
+    },
+    "9-10": {
+      "sentence": "階段で転ぶ［　］だった。",
+      "vi": "Tôi đã suýt ngã ở cầu thang."
+    },
+    "9-11": {
+      "sentence": "試験の結果が心配［　］たまらない。",
+      "vi": "Tôi lo lắng về kết quả thi đến không chịu nổi."
+    },
+    "9-12": {
+      "sentence": "彼はまだ学生［　］わけではない。",
+      "vi": "Không hẳn cậu ấy vẫn còn là sinh viên."
+    },
+    "9-13": {
+      "sentence": "時間があるなら、メール［　］くらい読もう。",
+      "vi": "Nếu có thời gian thì ít nhất hãy đọc một email."
+    },
+    "10-3": {
+      "sentence": "それでは、私がご案内［　］いただきます。"
+    },
+    "10-5": {
+      "sentence": "まだ元気［　］つもりだったが、すぐ疲れてしまった。",
+      "vi": "Tôi cứ tưởng mình vẫn khỏe, nhưng lại mệt ngay."
+    },
+    "10-6": {
+      "sentence": "彼が来た［　］思います。",
+      "vi": "Tôi có cảm giác là anh ấy đã đến."
+    },
+    "10-7": {
+      "sentence": "ただいま列車は運転を見合わせ［　］おります。"
+    },
+    "10-8": {
+      "sentence": "申し訳ありませんが、変更はいたし［　］。"
+    },
+    "10-9": {
+      "sentence": "残念［　］ことに、試合は中止になった。",
+      "vi": "Thật tiếc là trận đấu đã bị hủy."
+    },
+    "10-10": {
+      "sentence": "有名［　］だけあって、この店はいつも混んでいる。",
+      "vi": "Đúng là nổi tiếng, quán này lúc nào cũng đông."
+    },
+    "10-11": {
+      "sentence": "買い物［　］ついでに、牛乳を買ってきて。",
+      "vi": "Tiện thể đi mua sắm, mua giúp tôi ít sữa nhé."
+    }
+  },
+  "extra": {
+    "6-2": {
+      "sentence": "彼は遠慮［　］がちで、あまり意見を言わない。",
+      "vi": "Anh ấy hay ngại nên ít khi nêu ý kiến."
+    },
+    "6-12": {
+      "sentence": "海辺の町［　］ことから、魚がおいしい。",
+      "vi": "Vì là thị trấn ven biển nên cá ở đây ngon."
+    },
+    "7-3": {
+      "sentence": "元気［　］限り、旅行を続けたい。",
+      "vi": "Chừng nào còn khỏe, tôi muốn tiếp tục đi du lịch."
+    },
+    "7-8": {
+      "sentence": "学生［　］ながらも、彼は会社を経営している。",
+      "vi": "Dù là sinh viên, cậu ấy vẫn điều hành một công ty."
+    },
+    "8-2": {
+      "sentence": "みんなが親切［　］おかげで、安心できた。",
+      "vi": "Nhờ mọi người tử tế mà tôi thấy yên tâm."
+    },
+    "8-3": {
+      "sentence": "学生［　］ものですから、あまりお金がありません。",
+      "vi": "Vì là sinh viên nên tôi không có nhiều tiền."
+    },
+    "8-5": {
+      "sentence": "元気［　］くせに、仕事を休んだ。",
+      "vi": "Dù khỏe mà lại nghỉ làm."
+    },
+    "8-6": {
+      "sentence": "雨［　］せいで、試合が中止になった。",
+      "vi": "Vì mưa nên trận đấu đã bị hủy."
+    },
+    "8-7": {
+      "sentence": "新しい道具なら、便利［　］にきまっている。",
+      "vi": "Nếu là dụng cụ mới thì chắc chắn sẽ tiện lợi."
+    },
+    "8-12": {
+      "sentence": "会う［　］たびに、彼は新しい話をしてくれる。",
+      "vi": "Mỗi lần gặp, cậu ấy lại kể cho tôi chuyện mới."
+    },
+    "9-1": {
+      "sentence": "見本と同じ［　］ように作ってください。",
+      "vi": "Hãy làm giống như mẫu."
+    },
+    "9-6": {
+      "sentence": "毎日大学に通っている。彼は学生［　］わけだ。",
+      "vi": "Ngày nào cậu ấy cũng đến trường đại học. Thảo nào cậu ấy là sinh viên."
+    },
+    "9-8": {
+      "sentence": "どうして食べないの？ 野菜が嫌い［　］んだもん。",
+      "vi": "Sao cậu không ăn? Vì tớ ghét rau mà."
+    },
+    "9-12": {
+      "sentence": "野菜が嫌い［　］わけではないが、毎日は食べない。"
+    },
+    "10-5": {
+      "sentence": "社会人になっても、学生［　］つもりでいた。",
+      "vi": "Dù đã đi làm, tôi vẫn nghĩ mình là sinh viên."
+    },
+    "10-10": {
+      "sentence": "プロ［　］だけあって、彼の演奏はすばらしい。",
+      "vi": "Đúng là dân chuyên nghiệp, màn trình diễn của anh ấy thật xuất sắc."
+    }
+  }
+}
