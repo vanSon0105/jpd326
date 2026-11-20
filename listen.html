@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f6">
+  <title>Luyện nghe · Bài 6–10</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <a class="menu-button home-button" href="index.html" aria-label="Về trang luyện đề"><span aria-hidden="true">文</span></a>
+  <nav class="mode-switch" aria-label="Chọn bộ đề">
+    <a href="index.html" data-mode="all">Tổng hợp</a>
+    <a href="index.html?mode=kanji" data-mode="kanji">Kanji</a>
+    <a href="index.html?mode=grammar" data-mode="grammar">Ngữ pháp</a>
+    <a href="index.html?mode=vocab" data-mode="vocab">Từ vựng</a>
+    <a href="index.html?mode=exam" data-mode="exam">Đề thi</a>
+    <a href="listen.html" data-mode="listen" aria-current="page">Nghe</a>
+  </nav>
+
+  <main class="listen" aria-label="Luyện nghe">
+    <nav class="track-list" id="trackList" aria-label="Chọn bài nghe"></nav>
+
+    <section class="player" aria-labelledby="trackTitle">
+      <p class="question-prompt" id="trackMeta"></p>
+      <h1 class="track-title" id="trackTitle"></h1>
+      <audio id="audio" controls preload="metadata"></audio>
+      <div class="player-tools">
+        <label class="speed">Tốc độ
+          <select id="speed">
+            <option value="0.75">0,75×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.25">1,25×</option>
+          </select>
+        </label>
+        <span class="toggle-group">
+          <button id="scriptButton" type="button" aria-pressed="false">Hiện script</button>
+          <button id="hiraButton" type="button" aria-pressed="false">Hiện hira</button>
+          <button id="viButton" type="button" aria-pressed="false">Hiện dịch</button>
+        </span>
+      </div>
+      <p class="listen-hint" id="listenHint">Nghe trước rồi mới bật script. Bấm vào một câu trong script để nghe lại câu đó.</p>
+      <ol class="script" id="script" hidden></ol>
+      <nav class="question-nav" aria-label="Chuyển bài nghe">
+        <button id="prevTrack" type="button">← Bài trước</button>
+        <button id="nextTrack" type="button">Bài sau →</button>
+      </nav>
+    </section>
+  </main>
+
+  <script src="listening-data.js"></script>
+  <script src="listen.js"></script>
+</body>
+
+</html>
