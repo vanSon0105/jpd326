@@ -98,6 +98,10 @@ $("speed").onchange = event => {
   $("audio").defaultPlaybackRate = $("audio").playbackRate = settings.speed;
   save();
 };
+// Bấm chuột vào thanh âm thanh thì trình duyệt giữ focus trong đó và nuốt hết phím (trang không nhận được
+// Enter / ← →). Thả chuột xong thì trả focus về trang để phím tắt luôn dùng được.
+const releaseAudioFocus = () => setTimeout(() => { if (document.activeElement === $("audio")) $("audio").blur(); }, 0);
+for (const type of ["pointerup", "play", "pause", "seeked", "volumechange", "ratechange"]) $("audio").addEventListener(type, releaseAudioFocus);
 $("audio").addEventListener("timeupdate", highlight);
 $("audio").addEventListener("seeked", highlight);
 // Tua lùi / tới theo số giây đã chỉnh (1–60).
@@ -122,18 +126,24 @@ $("seekStep").onchange = event => { settings.seek = clampSeek(event.target.value
 renderSeek();
 
 // Phím tắt: Enter / Space phát–dừng, ← → tua. Bỏ qua khi đang gõ trong ô nhập hay ô chọn.
-document.addEventListener("keydown", event => {
+// Bắt ở pha capture trên window: khi đã bấm chuột vào thanh âm thanh, focus nằm trong nút điều khiển
+// của trình duyệt và nó tự xử lý Enter / ← → trước khi sự kiện nổi lên document.
+window.addEventListener("keydown", event => {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   const tag = event.target.tagName;
   if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) {
     if (event.key === "Enter" && event.target === $("seekStep")) event.target.blur(); // Enter trong ô số giây: lưu luôn.
     return;
   }
-  if (event.key === "Enter" && tag !== "A") { event.preventDefault(); togglePlay(); }
-  else if (event.key === " " && !["BUTTON", "AUDIO", "A"].includes(tag)) { event.preventDefault(); togglePlay(); }
-  else if (event.key === "ArrowLeft") { event.preventDefault(); seekBy(-settings.seek); }
-  else if (event.key === "ArrowRight") { event.preventDefault(); seekBy(settings.seek); }
-});
+  let action;
+  if (event.key === "Enter" && tag !== "A") action = togglePlay;
+  else if (event.key === " " && !["BUTTON", "A"].includes(tag)) action = togglePlay;
+  else if (event.key === "ArrowLeft") action = () => seekBy(-settings.seek);
+  else if (event.key === "ArrowRight") action = () => seekBy(settings.seek);
+  if (!action) return;
+  event.preventDefault(); event.stopPropagation();
+  if (!event.repeat || event.key.startsWith("Arrow")) action();
+}, true);
 $("prevTrack").onclick = () => selectTrack(LISTENING[LISTENING.indexOf(current) - 1], true);
 $("nextTrack").onclick = () => selectTrack(LISTENING[LISTENING.indexOf(current) + 1], true);
 renderToggles();
