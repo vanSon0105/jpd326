@@ -40,6 +40,11 @@
             <option value="1.25">1,25×</option>
           </select>
         </label>
+        <span class="seek">
+          <button id="seekBack" type="button" aria-label="Tua lùi">−5s</button>
+          <label>Tua <input id="seekStep" type="number" min="1" max="60" step="1" value="5" inputmode="numeric"> giây</label>
+          <button id="seekForward" type="button" aria-label="Tua tới">+5s</button>
+        </span>
         <span class="toggle-group">
           <button id="scriptButton" type="button" aria-pressed="false">Hiện script</button>
           <button id="hiraButton" type="button" aria-pressed="false">Hiện hira</button>
@@ -47,6 +52,7 @@
         </span>
       </div>
       <p class="listen-hint" id="listenHint">Nghe trước rồi mới bật script. Bấm vào một câu trong script để nghe lại câu đó.</p>
+      <p class="listen-keys">Phím tắt: <kbd>Enter</kbd> phát / dừng · <kbd>←</kbd> <kbd>→</kbd> tua lùi / tới</p>
       <ol class="script" id="script" hidden></ol>
       <nav class="question-nav" aria-label="Chuyển bài nghe">
         <button id="prevTrack" type="button">← Bài trước</button>

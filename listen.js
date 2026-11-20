@@ -1,7 +1,7 @@
 // Trang luyện nghe: phát từng track, bật/tắt script, furigana (hira) và bản dịch; bấm câu để nghe lại.
 const $ = id => document.getElementById(id);
 const SETTINGS_KEY = "jpd326-listen-settings";
-const settings = { track: LISTENING[0]?.track, script: false, hira: false, vi: false, speed: 1 };
+const settings = { track: LISTENING[0]?.track, script: false, hira: false, vi: false, speed: 1, seek: 5 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch { /* Dùng mặc định. */ }
 const save = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* Bỏ qua. */ } };
 let current = LISTENING.find(item => item.track === settings.track) || LISTENING[0];
@@ -100,11 +100,39 @@ $("speed").onchange = event => {
 };
 $("audio").addEventListener("timeupdate", highlight);
 $("audio").addEventListener("seeked", highlight);
-// Phím Space: phát / dừng (trừ khi đang chọn một nút hay ô nhập).
+// Tua lùi / tới theo số giây đã chỉnh (1–60).
+const clampSeek = value => Math.min(60, Math.max(1, Math.round(Number(value)) || 5));
+settings.seek = clampSeek(settings.seek);
+function renderSeek() {
+  $("seekStep").value = String(settings.seek);
+  $("seekBack").textContent = `−${settings.seek}s`;
+  $("seekForward").textContent = `+${settings.seek}s`;
+  $("seekBack").setAttribute("aria-label", `Tua lùi ${settings.seek} giây`);
+  $("seekForward").setAttribute("aria-label", `Tua tới ${settings.seek} giây`);
+}
+function seekBy(seconds) {
+  const audio = $("audio");
+  const end = Number.isFinite(audio.duration) ? audio.duration : current.duration || Infinity;
+  audio.currentTime = Math.min(end, Math.max(0, audio.currentTime + seconds));
+}
+const togglePlay = () => { if ($("audio").paused) $("audio").play().catch(() => {}); else $("audio").pause(); };
+$("seekBack").onclick = () => seekBy(-settings.seek);
+$("seekForward").onclick = () => seekBy(settings.seek);
+$("seekStep").onchange = event => { settings.seek = clampSeek(event.target.value); save(); renderSeek(); };
+renderSeek();
+
+// Phím tắt: Enter / Space phát–dừng, ← → tua. Bỏ qua khi đang gõ trong ô nhập hay ô chọn.
 document.addEventListener("keydown", event => {
-  if (event.key !== " " || ["BUTTON", "SELECT", "INPUT", "AUDIO", "A"].includes(event.target.tagName)) return;
-  event.preventDefault();
-  if ($("audio").paused) $("audio").play(); else $("audio").pause();
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  const tag = event.target.tagName;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(tag)) {
+    if (event.key === "Enter" && event.target === $("seekStep")) event.target.blur(); // Enter trong ô số giây: lưu luôn.
+    return;
+  }
+  if (event.key === "Enter" && tag !== "A") { event.preventDefault(); togglePlay(); }
+  else if (event.key === " " && !["BUTTON", "AUDIO", "A"].includes(tag)) { event.preventDefault(); togglePlay(); }
+  else if (event.key === "ArrowLeft") { event.preventDefault(); seekBy(-settings.seek); }
+  else if (event.key === "ArrowRight") { event.preventDefault(); seekBy(settings.seek); }
 });
 $("prevTrack").onclick = () => selectTrack(LISTENING[LISTENING.indexOf(current) - 1], true);
 $("nextTrack").onclick = () => selectTrack(LISTENING[LISTENING.indexOf(current) + 1], true);
