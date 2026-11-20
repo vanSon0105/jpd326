@@ -58,6 +58,10 @@ const RAW = {
 駅周辺|えきしゅうへん|khu vực quanh ga
 海辺|うみべ|bờ biển
 山辺|やまべ|ven núi
+論理的|ろんりてき|mang tính logic
+在学証明書|ざいがくしょうめいしょ|giấy chứng nhận đang học
+在勤|ざいきん|đang làm việc (tại nơi nào đó)
+在留|ざいりゅう|cư trú; lưu trú
 `,
   7: `
 会談|かいだん|hội đàm
@@ -292,6 +296,7 @@ const RAW = {
 造形|ぞうけい|tạo hình
 造林|ぞうりん|trồng rừng
 造反|ぞうはん|nổi loạn; chống đối
+～製|～せい|hàng làm bằng ～; sản xuất tại ～
 `
 };
 
@@ -321,7 +326,7 @@ const HAN_VIET = Object.fromEntries(`
 読ĐỘC 正CHÍNH 話THOẠI 声THANH 通THÔNG 直TRỰC 歌CA 見KIẾN 予DỰ 思TƯ 高CAO 低ĐÊ 多ĐA 少THIỂU 近CẬN 料LIỆU
 食THỰC 住TRÚ 作TÁC 業NGHIỆP 過QUÁ 得ĐẮC 流LƯU 当ĐƯƠNG 自TỰ 寝TẨM 様DẠNG 死TỬ 道ĐẠO 女NỮ 天THIÊN 雪TUYẾT
 算TOÁN 質CHẤT 教GIÁO 足TÚC 未VỊ 員VIÊN 点ĐIỂM 不BẤT 術THUẬT 内NỘI 度ĐỘ 生SINH 建KIẾN 利LỢI 用DỤNG 車XA
-行HÀNH 席TỊCH 口KHẨU 私TƯ 遅TRÌ 両LƯỠNG 林LÂM
+行HÀNH 席TỊCH 口KHẨU 私TƯ 遅TRÌ 両LƯỠNG 林LÂM 的ĐÍCH 勤CẦN 留LƯU
 `.trim().split(/\s+/).map(pair => [pair[0], pair.slice(1)]));
 // Từ có chữ đa âm đọc khác âm mặc định của chữ (vd 行 trong 行列 là "hàng").
 const HAN_VIET_WORDS = { 行列: "HÀNG LIỆT" };
