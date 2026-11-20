@@ -444,19 +444,35 @@ function renderPassage(entry) {
   $("passage").hidden = !passage;
   if (!passage) return;
   $("passageTitle").textContent = passage.title;
-  $("passageText").textContent = entry.passageHira && passage.hira ? passage.hira : passage.text;
+  // Furigana bật sẵn; entry.passageHira === false nghĩa là người học đã tắt.
+  const furigana = entry.passageHira !== false && Boolean(passage.ruby);
+  if (furigana) renderRuby($("passageText"), passage.ruby);
+  else $("passageText").textContent = passage.text;
   $("passageVi").textContent = passage.vi || "";
   $("passageVi").hidden = !(entry.passageVi && passage.vi);
-  $("passageHiraButton").hidden = !passage.hira;
+  $("passageHiraButton").hidden = !passage.ruby;
   $("passageViButton").hidden = !passage.vi;
-  $("passageHiraButton").setAttribute("aria-pressed", String(Boolean(entry.passageHira)));
+  $("passageHiraButton").setAttribute("aria-pressed", String(furigana));
   $("passageViButton").setAttribute("aria-expanded", String(Boolean(entry.passageVi)));
-  $("passageHiraButton").textContent = entry.passageHira ? "Chữ Hán" : "Hira";
-  $("passageViButton").textContent = entry.passageVi ? "Ẩn dịch" : "Dịch";
+  $("passageHiraButton").textContent = furigana ? "Ẩn furigana" : "Hiện furigana";
+  $("passageViButton").textContent = entry.passageVi ? "Ẩn bản dịch" : "Hiện bản dịch";
+}
+// Dựng chữ có furigana từ dạng ｜漢字《かんじ》 bằng thẻ <ruby>.
+function renderRuby(root, marked) {
+  root.replaceChildren();
+  for (const part of marked.split(/(｜[^《]+《[^》]+》)/)) {
+    const m = part.match(/^｜([^《]+)《([^》]+)》$/);
+    if (!m) { if (part) root.append(document.createTextNode(part)); continue; }
+    const ruby = document.createElement("ruby");
+    const rt = document.createElement("rt"); rt.textContent = m[2];
+    ruby.append(document.createTextNode(m[1]), rt);
+    root.append(ruby);
+  }
 }
 function togglePassage(kind) {
   if (!current) return;
-  current[kind] = !current[kind];
+  // Furigana mặc định bật (undefined = bật), bản dịch mặc định tắt.
+  current[kind] = kind === "passageHira" ? current[kind] === false : !current[kind];
   renderPassage(current);
 }
 function toggleHint(kind) {
@@ -563,8 +579,23 @@ function showResult(entry) {
     if (spec.category === "vocab") lines.push([`Từ vựng bài ${item.lesson}`]);
   }
   else if (spec.category === "exam") {
-    lines = [[`Giải thích: ${item.explain}`]];
-    if (item.vi) lines.push([`Dịch đề: ${item.vi}`]);
+    const detail = typeof EXAM_EXPLAIN === "object" ? EXAM_EXPLAIN[item.id] : null;
+    lines = [];
+    if (parts.marker) lines.push([`Câu đầy đủ: ${item.question.replace(parts.marker, parts.answer === "∅" ? "" : parts.answer)}`, "jp"]);
+    if (detail) {
+      lines.push([`Dịch: ${detail.vi}`], [`Vì sao: ${detail.why}`]);
+      // Giải thích từng đáp án theo thứ tự nút; ghi chú gốc theo thứ tự A–D trong đề.
+      parts.options.forEach((value, index) => {
+        const note = (detail.options[item.options.indexOf(value)] || "").replace(/ \(đúng\)$/, "");
+        const text = note.startsWith(value) || ["reading", "usage"].includes(item.kind) ? note : `${display(value)} — ${note}`;
+        const isAnswer = value === parts.answer;
+        lines.push([`${index + 1}. ${text}${isAnswer ? " ✓" : value === chosen ? " ✗" : ""}`,
+          `option${isAnswer ? " right" : value === chosen ? " wrong" : ""}`]);
+      });
+    } else {
+      lines.push([`Giải thích: ${item.explain}`]);
+      if (item.vi) lines.push([`Dịch đề: ${item.vi}`]);
+    }
     lines.push([`Nguồn: ${item.sources.join(", ")}`]);
   }
   else {
